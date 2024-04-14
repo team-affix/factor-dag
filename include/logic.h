@@ -37,6 +37,8 @@ namespace karnaugh
 
     class dissatisfying_coverage_tree
     {
+        std::vector<literal> m_ordered_literals;
+        
         std::map<literal, dissatisfying_coverage_tree> m_realized_subtrees;
 
     public:
@@ -57,16 +59,21 @@ namespace karnaugh
                     a_remaining_literals,
                     a_remaining_coverage
                 );
+
+            /// 2. Compute (and save) the minimal dissatisfying 
+            ///     coverage literal ordering.
             
-            /// 2. determine the satisfying input trajectories.
+            m_ordered_literals = order_coverages(l_subcoverages);
+            
+            /// 3. determine the satisfying input trajectories.
 
             std::map<literal, std::set<const satisfying_input*>> l_trajectories =
                 trajectories(
-                    order_coverages(l_subcoverages),
+                    m_ordered_literals,
                     a_satisfying_inputs
                 );
             
-            /// 3. realize only the subtrees along trajectories.
+            /// 4. realize only the subtrees along trajectories.
 
             for (const auto& [l_remaining_literal, l_satisfying_inputs] : l_trajectories)
             {
@@ -96,23 +103,36 @@ namespace karnaugh
                         l_trajectories[l_remaining_literal]
                     )
                 );
+
             }
 
         }
 
-        // bool evaluate(
-        //     const input& a_input
-        // )
-        // {
-        //     /// Base case of recursion.
-        //     ///     We reached a leaf node
-        //     ///     that has been fully realized.
-        //     if (m_realized_subtrees.size() == 0)
-        //         return true;
+        bool evaluate(
+            const input& a_input
+        ) const
+        {
+            /// Base case of recursion.
+            ///     We reached a leaf node
+            ///     that has been fully realized.
+            if (m_realized_subtrees.size() == 0)
+                return true;
 
+            /// 1. Determine trajectory of input.
+            literal l_trajectory = trajectory(
+                m_ordered_literals,
+                &a_input
+            );
+
+            /// If the next node has not been realized,
+            ///     then we return identity of disjunction (false).
+            if (!m_realized_subtrees.contains(l_trajectory))
+                return false;
+
+            /// 2. Send the input down its trajectory.
+            return m_realized_subtrees.at(l_trajectory).evaluate(a_input);
             
-            
-        // }
+        }
 
     private:
         static std::map<literal, std::set<const dissatisfying_input*>> subcoverages(
@@ -182,39 +202,54 @@ namespace karnaugh
 
         static std::map<literal, std::set<const satisfying_input*>> trajectories(
             const std::vector<literal>& a_ordered_literals,
-            const std::set<const satisfying_input*>& a_satisfying_inputs
+            const std::set<const input*>& a_inputs
         )
         {
             /// NOTE: Unused literals will be absent
             ///       from the set of keys in the result.
             std::map<literal, std::set<const satisfying_input*>> l_result;
 
-            for (const satisfying_input* l_satisfying_input : a_satisfying_inputs)
+            for (const satisfying_input* l_input : a_inputs)
             {
-                /// Since the vector is already sorted based
-                ///     on minimum dissatisfying coverage,
-                ///     we can just accept the first occurance
-                ///     of a covering literal in a forward scan.
-                std::vector<literal>::const_iterator
-                    l_trajectory = std::find_if(
-                        a_ordered_literals.begin(),
-                        a_ordered_literals.end(),
-                        [l_satisfying_input](
-                            literal a_literal
-                        )
-                        {
-                            return covers(a_literal, l_satisfying_input);
-                        }
+                literal l_trajectory = 
+                    trajectory(
+                        a_ordered_literals,
+                        l_input
                     );
 
-                /// Insert the satisfying input into the set,
+                /// Insert the input into the set,
                 ///     specifying the trajectory.
-                l_result[*l_trajectory].insert(l_satisfying_input);
+                l_result[l_trajectory].insert(l_input);
 
             }
 
             return l_result;
             
+        }
+
+        static literal trajectory(
+            const std::vector<literal>& a_ordered_literals,
+            const input* a_input
+        )
+        {
+            /// Since the vector is already sorted based
+            ///     on minimum dissatisfying coverage,
+            ///     we can just accept the first occurance
+            ///     of a covering literal in a forward scan.
+            std::vector<literal>::const_iterator
+                l_result = std::find_if(
+                    a_ordered_literals.begin(),
+                    a_ordered_literals.end(),
+                    [a_input](
+                        literal a_literal
+                    )
+                    {
+                        return covers(a_literal, a_input);
+                    }
+                );
+
+            return *l_result;
+
         }
         
     };
