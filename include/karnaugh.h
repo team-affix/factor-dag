@@ -2,6 +2,7 @@
 #define LOGIC_H
 
 #include <stdint.h>
+#include <utility>
 #include <vector>
 #include <map>
 #include <set>
@@ -52,69 +53,47 @@ namespace karnaugh
         return a_input->at(index(a_literal)) == sign(a_literal);
     }
 
+    struct coverage
+    {
+        std::set<const dissatisfying_input*> m_zeroes;
+        std::set<const satisfying_input*> m_ones;
+    };
+
     class model
     {
-        std::vector<literal> m_ordered_literals;
-        
-        std::map<literal, model> m_realized_subtrees;
+        std::map<std::pair<size_t, literal>, model> m_realized_subtrees;
 
     public:
         model(
             const std::set<literal>& a_remaining_literals,
-            const std::set<const dissatisfying_input*>& a_remaining_coverage,
-            const std::set<const satisfying_input*>& a_satisfying_inputs
+            const coverage& a_coverage
         )
         {
             /// Base case of recursion.
-            if (a_remaining_coverage.size() == 0)
+            if (a_coverage.m_zeroes.size() == 0)
                 return;
             
             /// 1. Determine literal coverages of unsatisfying inputs.
             
-            std::map<literal, std::set<const dissatisfying_input*>> l_subcoverages =
+            std::map<std::pair<size_t, literal>, coverage> l_subcoverages =
                 subcoverages(
                     a_remaining_literals,
-                    a_remaining_coverage
+                    a_coverage
                 );
 
-            /// 2. Compute (and save) the minimal dissatisfying 
-            ///     coverage literal ordering.
-            
-            m_ordered_literals = order_coverages(l_subcoverages);
-            
-            /// 3. Determine the satisfying input trajectories.
-
-            std::map<literal, std::set<const satisfying_input*>> l_trajectories =
-                trajectories(
-                    a_satisfying_inputs
-                );
-            
-            /// 4. Realize ONLY the subtrees along trajectories.
+            /// 2. Realize ONLY the subtrees along trajectories.
             ///     NOTE: All literals which are not on trajectories
             ///     are already absent from the map's keys.
 
-            for (const auto& [l_trajectory, l_satisfying_inputs] : l_trajectories)
-            {
-                std::set<literal> l_subtree_remaining_literals =
-                    subtree_remaining_literals(
-                        a_remaining_literals, l_trajectory);
-
-                /// Realize the subtree.
-                m_realized_subtrees.emplace(
-                    l_trajectory, 
-                    model(
-                        l_subtree_remaining_literals,
-                        l_subcoverages[l_trajectory],
-                        l_trajectories[l_trajectory]
-                    )
-                );
-
-            }
+            realize_subtrees(
+                a_remaining_literals,
+                l_subcoverages
+            );
 
         }
 
         bool evaluate(
-            const input& a_input
+            const input* a_input
         ) const
         {
             /// Base case of recursion.
@@ -124,159 +103,137 @@ namespace karnaugh
                 return true;
 
             /// 1. Determine trajectory of input.
-            literal l_trajectory = trajectory(
-                &a_input
-            );
+            std::map<std::pair<size_t, literal>, model>::const_iterator
+                l_submodel = std::find_if(
+                    m_realized_subtrees.begin(),
+                    m_realized_subtrees.end(),
+                    [a_input](
+                        const auto& l_entry
+                    )
+                    {
+                        return covers(l_entry.first.second, a_input);
+                    }
+                );
 
             /// If the next node has not been realized,
             ///     then we return identity of disjunction (false).
-            if (!m_realized_subtrees.contains(l_trajectory))
+            if (l_submodel == m_realized_subtrees.end())
                 return false;
 
             /// 2. Send the input down its trajectory.
-            return m_realized_subtrees.at(l_trajectory).evaluate(a_input);
+            return l_submodel->second.evaluate(a_input);
             
+        }
+
+        bool evaluate(
+            const input& a_input
+        ) const
+        {
+            return evaluate(&a_input);
         }
 
     private:
-        static std::map<literal, std::set<const dissatisfying_input*>> subcoverages(
+        static std::map<std::pair<size_t, literal>, coverage> subcoverages(
             const std::set<literal>& a_literals,
-            const std::set<const dissatisfying_input*>& a_dissatisfying_coverage
+            const coverage& a_coverage
         )
         {
-            std::map<literal, std::set<const dissatisfying_input*>> l_result;
+            std::map<std::pair<size_t, literal>, coverage> l_result;
 
-            for (literal l_remaining_literal : a_literals)
+            for (literal l_literal : a_literals)
             {
+                coverage l_literal_coverage;
+                
                 /// Filter the dissatisfying coverage
                 ///     based on the literal.
                 std::copy_if(
-                    a_dissatisfying_coverage.begin(),
-                    a_dissatisfying_coverage.end(),
+                    a_coverage.m_zeroes.begin(),
+                    a_coverage.m_zeroes.end(),
                     std::inserter(
-                        l_result[l_remaining_literal],
-                        l_result[l_remaining_literal].begin()
+                        l_literal_coverage.m_zeroes,
+                        l_literal_coverage.m_zeroes.begin()
                     ),
-                    [l_remaining_literal](
-                        const dissatisfying_input* a_dissatisfying_input
+                    [l_literal](
+                        const dissatisfying_input* a_zero
                     )
                     {
-                        return covers(l_remaining_literal, a_dissatisfying_input);
+                        return covers(l_literal, a_zero);
                     }
                 );
+
+                l_result.emplace(
+                    std::pair{
+                        l_literal_coverage.m_zeroes.size(),
+                        l_literal
+                    },
+                    l_literal_coverage
+                );
+                
             }
+
+            for (const satisfying_input* l_one : a_coverage.m_ones)
+            {
+                for (auto& [l_pair, l_coverage] : l_result)
+                {
+                    if (!covers(l_pair.second, l_one))
+                        continue;
+
+                    l_coverage.m_ones.insert(l_one);
+
+                    break;
+                    
+                }
+            }
+
+            std::map<std::pair<size_t, literal>, coverage>::iterator
+                l_removal_iterator = l_result.begin();
+
+            while (l_removal_iterator != l_result.end())
+                l_removal_iterator =
+                    l_removal_iterator->second.m_ones.size() == 0 ?
+                    l_result.erase(l_removal_iterator) :
+                    ++l_removal_iterator;
 
             return l_result;
             
         }
 
-        static std::vector<literal> order_coverages(
-            const std::map<literal, std::set<const dissatisfying_input*>>& a_subcoverages
+        void realize_subtrees(
+            const std::set<literal>& a_remaining_literals,
+            const std::map<std::pair<size_t, literal>, coverage>& a_subcoverages
         )
         {
-            std::vector<literal> l_result;
-
-            /// Push all the literals from the map
-            ///     into the vector.
-            for (const auto& [l_literal, _] : a_subcoverages)
-                l_result.push_back(l_literal);
-
-
-            /// Stable sort should be used, since
-            ///     there will be multiple literals
-            ///     with equivalent coverage sizes.
-            ///     (Stable sort provides non-descending order)
-            std::stable_sort(
-                l_result.begin(),
-                l_result.end(),
-                [&a_subcoverages](
-                    literal a_literal_0,
-                    literal a_literal_1
-                )
-                {
-                    return
-                        a_subcoverages.at(a_literal_0).size() <
-                        a_subcoverages.at(a_literal_1).size();
-                }
-            );
-
-            return l_result;
-            
-        }
-
-        std::map<literal, std::set<const satisfying_input*>> trajectories(
-            const std::set<const input*>& a_inputs
-        ) const
-        {
-            /// NOTE: Unused literals will be absent
-            ///       from the set of keys in the result.
-            std::map<literal, std::set<const satisfying_input*>> l_result;
-
-            for (const satisfying_input* l_input : a_inputs)
+            for (const auto& [l_pair, l_coverage] : a_subcoverages)
             {
-                literal l_trajectory = 
-                    trajectory(
-                        l_input
-                    );
+                std::set<literal> l_subtree_remaining_literals;
 
-                /// Insert the input into the set,
-                ///     specifying the trajectory.
-                l_result[l_trajectory].insert(l_input);
-
-            }
-
-            return l_result;
-            
-        }
-
-        literal trajectory(
-            const input* a_input
-        ) const
-        {
-            /// Since the vector is already sorted based
-            ///     on minimum dissatisfying coverage,
-            ///     we can just accept the first occurance
-            ///     of a covering literal in a forward scan.
-            std::vector<literal>::const_iterator
-                l_result = std::find_if(
-                    m_ordered_literals.begin(),
-                    m_ordered_literals.end(),
-                    [a_input](
+                /// Filter all remaining literals based on
+                ///     literal that is being taken care of
+                ///     by this edge to the subtree.
+                std::copy_if(
+                    l_subtree_remaining_literals.begin(),
+                    l_subtree_remaining_literals.end(),
+                    std::inserter(
+                        l_subtree_remaining_literals,
+                        l_subtree_remaining_literals.begin()),
+                    [l_pair](
                         literal a_literal
                     )
                     {
-                        return covers(a_literal, a_input);
+                        return index(a_literal) != index(l_pair.second);
                     }
                 );
 
-            return *l_result;
+                m_realized_subtrees.emplace(
+                    l_pair,
+                    model(
+                        l_subtree_remaining_literals,
+                        l_coverage
+                    )
+                );
 
-        }
+            }
 
-        static std::set<literal> subtree_remaining_literals(
-            const std::set<literal>& a_root_remaining_literals,
-            literal a_trajectory
-        )
-        {
-            std::set<literal> l_result;
-
-            /// Filter all remaining literals based on
-            ///     literal that is being taken care of
-            ///     by this edge to the subtree.
-            std::copy_if(
-                a_root_remaining_literals.begin(),
-                a_root_remaining_literals.end(),
-                std::inserter(l_result, l_result.begin()),
-                [a_trajectory](
-                    literal a_literal
-                )
-                {
-                    return index(a_literal) != index(a_trajectory);
-                }
-            );
-
-            return l_result;
-                
         }
         
     };

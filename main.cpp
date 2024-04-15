@@ -66,8 +66,10 @@ void test_small_generalization_0(
     
     karnaugh::model l_model(
         make_literals(3),
-        const_pointers(l_dissatisfying_inputs),
-        const_pointers(l_satisfying_inputs)
+        coverage {
+            .m_zeroes = const_pointers(l_dissatisfying_inputs),
+            .m_ones = const_pointers(l_satisfying_inputs)
+        }
     );
 
     assert(l_model.evaluate({0, 0, 0}) == false);
