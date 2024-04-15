@@ -59,20 +59,20 @@ void test_small_generalization_0(
         { 0, 0, 1 }
     };
     
-    karnaugh::dissatisfying_coverage_tree l_tree(
+    karnaugh::model l_model(
         make_literals(3),
         const_pointers(l_dissatisfying_inputs),
         const_pointers(l_satisfying_inputs)
     );
 
-    assert(l_tree.evaluate({0, 0, 0}) == false);
-    assert(l_tree.evaluate({0, 0, 1}) == true);
-    assert(l_tree.evaluate({0, 1, 0}) == false);
-    assert(l_tree.evaluate({0, 1, 1}) == false);
-    assert(l_tree.evaluate({1, 0, 0}) == true);
-    assert(l_tree.evaluate({1, 0, 1}) == true);
-    assert(l_tree.evaluate({1, 1, 0}) == true);
-    assert(l_tree.evaluate({1, 1, 1}) == true);
+    assert(l_model.evaluate({0, 0, 0}) == false);
+    assert(l_model.evaluate({0, 0, 1}) == true);
+    assert(l_model.evaluate({0, 1, 0}) == false);
+    assert(l_model.evaluate({0, 1, 1}) == false);
+    assert(l_model.evaluate({1, 0, 0}) == true);
+    assert(l_model.evaluate({1, 0, 1}) == true);
+    assert(l_model.evaluate({1, 1, 0}) == true);
+    assert(l_model.evaluate({1, 1, 1}) == true);
 
 }
 

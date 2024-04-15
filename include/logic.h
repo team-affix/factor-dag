@@ -35,14 +35,14 @@ namespace karnaugh
 
     /// Construction of root: dct(remaining_literals, remaining_dis_cov)
 
-    class dissatisfying_coverage_tree
+    class model
     {
         std::vector<literal> m_ordered_literals;
         
-        std::map<literal, dissatisfying_coverage_tree> m_realized_subtrees;
+        std::map<literal, model> m_realized_subtrees;
 
     public:
-        dissatisfying_coverage_tree(
+        model(
             const std::set<literal>& a_remaining_literals,
             const std::set<const dissatisfying_input*>& a_remaining_coverage,
             const std::set<const satisfying_input*>& a_satisfying_inputs
@@ -69,7 +69,6 @@ namespace karnaugh
 
             std::map<literal, std::set<const satisfying_input*>> l_trajectories =
                 trajectories(
-                    m_ordered_literals,
                     a_satisfying_inputs
                 );
             
@@ -97,7 +96,7 @@ namespace karnaugh
                 /// Realize the subtree.
                 m_realized_subtrees.emplace(
                     l_remaining_literal, 
-                    dissatisfying_coverage_tree(
+                    model(
                         l_subtree_remaining_literals,
                         l_subcoverages[l_remaining_literal],
                         l_trajectories[l_remaining_literal]
@@ -120,7 +119,6 @@ namespace karnaugh
 
             /// 1. Determine trajectory of input.
             literal l_trajectory = trajectory(
-                m_ordered_literals,
                 &a_input
             );
 
@@ -200,10 +198,9 @@ namespace karnaugh
             
         }
 
-        static std::map<literal, std::set<const satisfying_input*>> trajectories(
-            const std::vector<literal>& a_ordered_literals,
+        std::map<literal, std::set<const satisfying_input*>> trajectories(
             const std::set<const input*>& a_inputs
-        )
+        ) const
         {
             /// NOTE: Unused literals will be absent
             ///       from the set of keys in the result.
@@ -213,7 +210,6 @@ namespace karnaugh
             {
                 literal l_trajectory = 
                     trajectory(
-                        a_ordered_literals,
                         l_input
                     );
 
@@ -227,10 +223,9 @@ namespace karnaugh
             
         }
 
-        static literal trajectory(
-            const std::vector<literal>& a_ordered_literals,
+        literal trajectory(
             const input* a_input
-        )
+        ) const
         {
             /// Since the vector is already sorted based
             ///     on minimum dissatisfying coverage,
@@ -238,8 +233,8 @@ namespace karnaugh
             ///     of a covering literal in a forward scan.
             std::vector<literal>::const_iterator
                 l_result = std::find_if(
-                    a_ordered_literals.begin(),
-                    a_ordered_literals.end(),
+                    m_ordered_literals.begin(),
+                    m_ordered_literals.end(),
                     [a_input](
                         literal a_literal
                     )
