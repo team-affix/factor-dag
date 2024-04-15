@@ -1,8 +1,7 @@
 #include <iostream>
 #include <assert.h>
 
-#include "input.h"
-#include "logic.h"
+#include "karnaugh.h"
 
 #define LOG(x) if (ENABLE_DEBUG_LOGS) std::cout << x;
 
@@ -40,6 +39,12 @@ std::set<const T*> const_pointers(
     return l_result;
     
 }
+
+
+////////////////////////////////////////////
+//////////////// UNIT TESTS ////////////////
+////////////////////////////////////////////
+#pragma region UNIT TESTS
 
 void test_small_generalization_0(
 
@@ -85,6 +90,8 @@ void unit_test_main(
     TEST(test_small_generalization_0);
     
 }
+
+#pragma endregion
 
 int main(
 

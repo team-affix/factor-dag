@@ -1,13 +1,32 @@
 #ifndef LOGIC_H
 #define LOGIC_H
 
-#include <set>
+#include <stdint.h>
 #include <vector>
+#include <map>
+#include <set>
 #include <algorithm>
-#include "input.h"
 
 namespace karnaugh
 {
+
+    ////////////////////////////////////////////
+    /////////////// INPUT TYPES ////////////////
+    ////////////////////////////////////////////
+    #pragma region INPUT TYPES
+
+    typedef std::vector<bool> input;
+
+    typedef input dissatisfying_input;
+    
+    typedef input satisfying_input;
+
+    #pragma endregion
+
+    ////////////////////////////////////////////
+    ///////////////// MODELING /////////////////
+    ////////////////////////////////////////////
+    #pragma region MODELING
 
     typedef uint32_t literal;
 
@@ -33,8 +52,6 @@ namespace karnaugh
         return a_input->at(index(a_literal)) == sign(a_literal);
     }
 
-    /// Construction of root: dct(remaining_literals, remaining_dis_cov)
-
     class model
     {
         std::vector<literal> m_ordered_literals;
@@ -52,7 +69,7 @@ namespace karnaugh
             if (a_remaining_coverage.size() == 0)
                 return;
             
-            /// 1. determine literal coverage of unsatisfying inputs.
+            /// 1. Determine literal coverages of unsatisfying inputs.
             
             std::map<literal, std::set<const dissatisfying_input*>> l_subcoverages =
                 subcoverages(
@@ -65,41 +82,30 @@ namespace karnaugh
             
             m_ordered_literals = order_coverages(l_subcoverages);
             
-            /// 3. determine the satisfying input trajectories.
+            /// 3. Determine the satisfying input trajectories.
 
             std::map<literal, std::set<const satisfying_input*>> l_trajectories =
                 trajectories(
                     a_satisfying_inputs
                 );
             
-            /// 4. realize only the subtrees along trajectories.
+            /// 4. Realize ONLY the subtrees along trajectories.
+            ///     NOTE: All literals which are not on trajectories
+            ///     are already absent from the map's keys.
 
-            for (const auto& [l_remaining_literal, l_satisfying_inputs] : l_trajectories)
+            for (const auto& [l_trajectory, l_satisfying_inputs] : l_trajectories)
             {
-                std::set<literal> l_subtree_remaining_literals;
+                std::set<literal> l_subtree_remaining_literals =
+                    subtree_remaining_literals(
+                        a_remaining_literals, l_trajectory);
 
-                /// Filter all remaining literals based on
-                ///     literal that is being taken care of
-                ///     by this edge to the subtree.
-                std::copy_if(
-                    a_remaining_literals.begin(),
-                    a_remaining_literals.end(),
-                    std::inserter(l_subtree_remaining_literals, l_subtree_remaining_literals.begin()),
-                    [l_remaining_literal](
-                        literal a_literal
-                    )
-                    {
-                        return index(a_literal) != index(l_remaining_literal);
-                    }
-                );
-                
                 /// Realize the subtree.
                 m_realized_subtrees.emplace(
-                    l_remaining_literal, 
+                    l_trajectory, 
                     model(
                         l_subtree_remaining_literals,
-                        l_subcoverages[l_remaining_literal],
-                        l_trajectories[l_remaining_literal]
+                        l_subcoverages[l_trajectory],
+                        l_trajectories[l_trajectory]
                     )
                 );
 
@@ -246,8 +252,36 @@ namespace karnaugh
             return *l_result;
 
         }
+
+        static std::set<literal> subtree_remaining_literals(
+            const std::set<literal>& a_root_remaining_literals,
+            literal a_trajectory
+        )
+        {
+            std::set<literal> l_result;
+
+            /// Filter all remaining literals based on
+            ///     literal that is being taken care of
+            ///     by this edge to the subtree.
+            std::copy_if(
+                a_root_remaining_literals.begin(),
+                a_root_remaining_literals.end(),
+                std::inserter(l_result, l_result.begin()),
+                [a_trajectory](
+                    literal a_literal
+                )
+                {
+                    return index(a_literal) != index(a_trajectory);
+                }
+            );
+
+            return l_result;
+                
+        }
         
     };
+    
+    #pragma endregion
     
 }
 
