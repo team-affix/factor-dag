@@ -99,18 +99,18 @@ void test_literal_covers(
 {
     input l_input = { 0, 1, 1, 0, 1, 0 };
 
-    assert(covers(literal(0), &l_input) == true);
-    assert(covers(literal(1), &l_input) == false);
-    assert(covers(literal(2), &l_input) == false);
-    assert(covers(literal(3), &l_input) == true);
-    assert(covers(literal(4), &l_input) == false);
-    assert(covers(literal(5), &l_input) == true);
-    assert(covers(literal(6), &l_input) == true);
-    assert(covers(literal(7), &l_input) == false);
-    assert(covers(literal(8), &l_input) == false);
-    assert(covers(literal(9), &l_input) == true);
-    assert(covers(literal(10), &l_input) == true);
-    assert(covers(literal(11), &l_input) == false);
+    assert(covers(literal(0), l_input) == true);
+    assert(covers(literal(1), l_input) == false);
+    assert(covers(literal(2), l_input) == false);
+    assert(covers(literal(3), l_input) == true);
+    assert(covers(literal(4), l_input) == false);
+    assert(covers(literal(5), l_input) == true);
+    assert(covers(literal(6), l_input) == true);
+    assert(covers(literal(7), l_input) == false);
+    assert(covers(literal(8), l_input) == false);
+    assert(covers(literal(9), l_input) == true);
+    assert(covers(literal(10), l_input) == true);
+    assert(covers(literal(11), l_input) == false);
     
 }
 
