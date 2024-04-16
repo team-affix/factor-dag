@@ -223,7 +223,7 @@ namespace karnaugh
 
         }
 
-        bool evaluate(
+        bool operator()(
             const input& a_input
         ) const
         {
@@ -246,7 +246,7 @@ namespace karnaugh
                 {
                     const literal& l_literal = a_entry.first.second;
                     const tree& l_tree = a_entry.second;
-                    return covers(l_literal, a_input) && l_tree.evaluate(a_input);
+                    return covers(l_literal, a_input) && l_tree(a_input);
                 }
             );
 
