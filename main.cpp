@@ -216,6 +216,102 @@ void test_small_generalization_1(
     
 }
 
+void test_small_generalization_2(
+
+)
+{
+    std::set<zero> l_zeroes =
+    {
+        {0, 0, 0, 0},
+        {0, 0, 0, 1},
+        {0, 1, 0, 1},
+        {0, 1, 1, 1},
+        {0, 1, 1, 0},
+        {1, 1, 1, 1},
+    };
+
+    std::set<one> l_ones =
+    {
+        {0, 0, 1, 1},
+        {0, 1, 0, 0},
+        {1, 1, 0, 1},
+        {1, 1, 1, 0},
+        {1, 0, 0, 1},
+        {1, 0, 1, 1},
+        {1, 0, 1, 0},
+    };
+
+    tree l_tree(
+        make_literals(4),
+        make_coverage(l_zeroes, l_ones)
+    );
+
+    assert(l_tree.evaluate({0, 0, 0, 0}) == false);
+    assert(l_tree.evaluate({0, 0, 0, 1}) == false);
+    assert(l_tree.evaluate({0, 0, 1, 0}) == true); // Unknown
+    assert(l_tree.evaluate({0, 0, 1, 1}) == true);
+    assert(l_tree.evaluate({0, 1, 0, 0}) == true);
+    assert(l_tree.evaluate({0, 1, 0, 1}) == false);
+    assert(l_tree.evaluate({0, 1, 1, 0}) == false);
+    assert(l_tree.evaluate({0, 1, 1, 1}) == false);
+
+    assert(l_tree.evaluate({1, 0, 0, 0}) == true); // Unknown
+    assert(l_tree.evaluate({1, 0, 0, 1}) == true);
+    assert(l_tree.evaluate({1, 0, 1, 0}) == true);
+    assert(l_tree.evaluate({1, 0, 1, 1}) == true);
+    assert(l_tree.evaluate({1, 1, 0, 0}) == true); // Unknown
+    assert(l_tree.evaluate({1, 1, 0, 1}) == true);
+    assert(l_tree.evaluate({1, 1, 1, 0}) == true);
+    assert(l_tree.evaluate({1, 1, 1, 1}) == false);
+    
+}
+
+void test_small_generalization_3(
+
+)
+{
+    std::set<zero> l_zeroes =
+    {
+        {0, 1, 1, 0},
+        {1, 1, 0, 0},
+        {1, 0, 0, 0},
+        {1, 0, 0, 1},
+        {1, 0, 1, 0},
+    };
+
+    std::set<one> l_ones =
+    {
+        {0, 0, 0, 0},
+        {0, 1, 0, 0},
+        {1, 1, 1, 1},
+        {1, 0, 1, 1},
+    };
+
+    tree l_tree(
+        make_literals(4),
+        make_coverage(l_zeroes, l_ones)
+    );
+
+    assert(l_tree.evaluate({0, 0, 0, 0}) == true);
+    assert(l_tree.evaluate({0, 0, 0, 1}) == true); // Unknown
+    assert(l_tree.evaluate({0, 0, 1, 0}) == true); // Unknown
+    assert(l_tree.evaluate({0, 0, 1, 1}) == true); // Unknown
+    assert(l_tree.evaluate({0, 1, 0, 0}) == true);
+    assert(l_tree.evaluate({0, 1, 0, 1}) == true); // Unknown
+    assert(l_tree.evaluate({0, 1, 1, 0}) == false);
+    assert(l_tree.evaluate({0, 1, 1, 1}) == true); // Unknown
+
+    assert(l_tree.evaluate({1, 0, 0, 0}) == false);
+    assert(l_tree.evaluate({1, 0, 0, 1}) == false);
+    assert(l_tree.evaluate({1, 0, 1, 0}) == false);
+    assert(l_tree.evaluate({1, 0, 1, 1}) == true);
+    assert(l_tree.evaluate({1, 1, 0, 0}) == false);
+    assert(l_tree.evaluate({1, 1, 0, 1}) == true);  // Unknown
+    assert(l_tree.evaluate({1, 1, 1, 0}) == false); // Unknown
+    assert(l_tree.evaluate({1, 1, 1, 1}) == true);
+    
+}
+
 void unit_test_main(
 
 )
@@ -230,6 +326,8 @@ void unit_test_main(
     TEST(test_make_literals);
     TEST(test_small_generalization_0);
     TEST(test_small_generalization_1);
+    TEST(test_small_generalization_2);
+    TEST(test_small_generalization_3);
     
 }
 
