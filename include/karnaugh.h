@@ -36,10 +36,10 @@ namespace karnaugh
         coverage l_result;
         
         for (const auto& a_zero : a_zeroes)
-            l_result.m_zeroes.insert(&a_zero);
+            l_result.m_zeroes.insert((const zero*)&a_zero);
             
         for (const auto& a_one : a_ones)
-            l_result.m_ones.insert(&a_one);
+            l_result.m_ones.insert((const one*)&a_one);
 
         return l_result;
                 
