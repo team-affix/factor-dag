@@ -18,16 +18,15 @@ namespace karnaugh
 
     typedef std::vector<bool> input;
 
-    typedef input dissatisfying_input;
+    typedef input zero;
     
-    typedef input satisfying_input;
+    typedef input one;
 
-    #pragma endregion
-
-    ////////////////////////////////////////////
-    ///////////////// MODELING /////////////////
-    ////////////////////////////////////////////
-    #pragma region MODELING
+    struct coverage
+    {
+        std::set<const zero*> m_zeroes;
+        std::set<const one*> m_ones;
+    };
 
     typedef uint32_t literal;
 
@@ -53,18 +52,19 @@ namespace karnaugh
         return a_input->at(index(a_literal)) == sign(a_literal);
     }
 
-    struct coverage
-    {
-        std::set<const dissatisfying_input*> m_zeroes;
-        std::set<const satisfying_input*> m_ones;
-    };
+    #pragma endregion
 
-    class model
+    ////////////////////////////////////////////
+    ///////////////// MODELING /////////////////
+    ////////////////////////////////////////////
+    #pragma region MODELING
+
+    class tree
     {
-        std::map<std::pair<size_t, literal>, model> m_realized_subtrees;
+        std::map<std::pair<size_t, literal>, tree> m_realized_subtrees;
 
     public:
-        model(
+        tree(
             const std::set<literal>& a_remaining_literals,
             const coverage& a_coverage
         )
@@ -110,7 +110,7 @@ namespace karnaugh
             /// 1. Determine trajectory of input.
             /////////////////////////////////////////////////////
 
-            std::map<std::pair<size_t, literal>, model>::const_iterator
+            std::map<std::pair<size_t, literal>, tree>::const_iterator
                 l_submodel = std::find_if(
                     m_realized_subtrees.begin(),
                     m_realized_subtrees.end(),
@@ -173,7 +173,7 @@ namespace karnaugh
                         l_literal_coverage.m_zeroes.begin()
                     ),
                     [l_literal](
-                        const dissatisfying_input* a_zero
+                        const zero* a_zero
                     )
                     {
                         return covers(l_literal, a_zero);
@@ -194,7 +194,7 @@ namespace karnaugh
             /// 2. Populate satisfying coverage in the map entries
             //////////////////////////////////////////////////////
 
-            for (const satisfying_input* l_one : a_coverage.m_ones)
+            for (const one* l_one : a_coverage.m_ones)
             {
                 auto l_insertion_position =
                     std::find_if(
@@ -265,7 +265,7 @@ namespace karnaugh
 
                 m_realized_subtrees.emplace(
                     l_pair,
-                    model(
+                    tree(
                         l_subtree_remaining_literals,
                         l_coverage
                     )

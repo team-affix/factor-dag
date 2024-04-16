@@ -40,7 +40,6 @@ std::set<const T*> const_pointers(
     
 }
 
-
 ////////////////////////////////////////////
 //////////////// UNIT TESTS ////////////////
 ////////////////////////////////////////////
@@ -50,21 +49,21 @@ void test_small_generalization_0(
 
 )
 {
-    std::set<dissatisfying_input> l_dissatisfying_inputs =
+    std::set<zero> l_dissatisfying_inputs =
     {
         { 0, 1, 1 },
         { 0, 1, 0 },
         { 0, 0, 0 }
     };
 
-    std::set<satisfying_input> l_satisfying_inputs =
+    std::set<one> l_satisfying_inputs =
     {
         { 1, 1, 1 },
         { 1, 0, 1 },
         { 0, 0, 1 }
     };
     
-    karnaugh::model l_model(
+    karnaugh::tree l_tree(
         make_literals(3),
         coverage {
             .m_zeroes = const_pointers(l_dissatisfying_inputs),
@@ -72,14 +71,14 @@ void test_small_generalization_0(
         }
     );
 
-    assert(l_model.evaluate({0, 0, 0}) == false);
-    assert(l_model.evaluate({0, 0, 1}) == true);
-    assert(l_model.evaluate({0, 1, 0}) == false);
-    assert(l_model.evaluate({0, 1, 1}) == false);
-    assert(l_model.evaluate({1, 0, 0}) == true);
-    assert(l_model.evaluate({1, 0, 1}) == true);
-    assert(l_model.evaluate({1, 1, 0}) == true);
-    assert(l_model.evaluate({1, 1, 1}) == true);
+    assert(l_tree.evaluate({0, 0, 0}) == false);
+    assert(l_tree.evaluate({0, 0, 1}) == true);
+    assert(l_tree.evaluate({0, 1, 0}) == false);
+    assert(l_tree.evaluate({0, 1, 1}) == false);
+    assert(l_tree.evaluate({1, 0, 0}) == true);
+    assert(l_tree.evaluate({1, 0, 1}) == true);
+    assert(l_tree.evaluate({1, 1, 0}) == true);
+    assert(l_tree.evaluate({1, 1, 1}) == true);
 
 }
 
