@@ -1,5 +1,6 @@
 #include <iostream>
 #include <assert.h>
+#include <sstream>
 
 #include "karnaugh.h"
 
@@ -137,6 +138,8 @@ void test_small_generalization_0(
 
 )
 {
+    constexpr bool ENABLE_DEBUG_LOGS = false;
+    
     std::set<zero> l_zeroes =
     {
         { 0, 1, 1 },
@@ -165,12 +168,22 @@ void test_small_generalization_0(
     assert(l_tree.evaluate({1, 1, 0}) == true);
     assert(l_tree.evaluate({1, 1, 1}) == true);
 
+    LOG(l_tree << std::endl);
+
+    std::stringstream l_ss;
+
+    l_ss << l_tree;
+
+    assert(l_ss.str() == "1+2(5)");
+    
 }
 
 void test_small_generalization_1(
 
 )
 {
+    constexpr bool ENABLE_DEBUG_LOGS = false;
+    
     std::set<zero> l_zeroes =
     {
         {0, 1, 0, 0},
@@ -214,12 +227,22 @@ void test_small_generalization_1(
     assert(l_tree.evaluate({1, 1, 1, 0}) == true);
     assert(l_tree.evaluate({1, 1, 1, 1}) == true);
     
+    LOG(l_tree << std::endl);
+
+    std::stringstream l_ss;
+
+    l_ss << l_tree;
+
+    assert(l_ss.str() == "1");
+    
 }
 
 void test_small_generalization_2(
 
 )
 {
+    constexpr bool ENABLE_DEBUG_LOGS = false;
+    
     std::set<zero> l_zeroes =
     {
         {0, 0, 0, 0},
@@ -264,12 +287,22 @@ void test_small_generalization_2(
     assert(l_tree.evaluate({1, 1, 1, 0}) == true);
     assert(l_tree.evaluate({1, 1, 1, 1}) == false);
     
+    LOG(l_tree << std::endl);
+
+    std::stringstream l_ss;
+
+    l_ss << l_tree;
+
+    assert(l_ss.str() == "1(2+4+6)+2(5)+6(3(4))");
+    
 }
 
 void test_small_generalization_3(
 
 )
 {
+    constexpr bool ENABLE_DEBUG_LOGS = false;
+
     std::set<zero> l_zeroes =
     {
         {0, 1, 1, 0},
@@ -309,6 +342,14 @@ void test_small_generalization_3(
     assert(l_tree.evaluate({1, 1, 0, 1}) == true);  // Unknown
     assert(l_tree.evaluate({1, 1, 1, 0}) == false); // Unknown
     assert(l_tree.evaluate({1, 1, 1, 1}) == true);
+
+    LOG(l_tree << std::endl);
+
+    std::stringstream l_ss;
+
+    l_ss << l_tree;
+
+    assert(l_ss.str() == "0(2+4)+7(3+5)");
     
 }
 

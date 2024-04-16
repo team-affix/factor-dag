@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <ostream>
 
 namespace karnaugh
 {
@@ -113,22 +114,112 @@ namespace karnaugh
             /// 1. Determine literal coverages given our coverage.
             /////////////////////////////////////////////////////
             
-            std::map<std::pair<size_t, literal>, coverage> l_subcoverages =
-                subcoverages(
-                    a_remaining_literals,
-                    a_coverage
+            #pragma region DETERMINE SUBCOVERAGES
+
+            /// Key type is std::pair<size_t, literal> because we
+            ///     can populate size_t with dissatisfying cov size.
+            ///     This will ensure the map is sorted by minimum
+            ///     dissatisfying coverage.
+            std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
+
+            /////////////////////////////////////////////////////
+            /// 1. Populate subcoverage map based on the
+            ///     dissatisfying coverage of each literal.
+            /////////////////////////////////////////////////////
+            
+            for (literal l_literal : a_remaining_literals)
+            {
+                coverage l_literal_coverage;
+                
+                /// Filter the dissatisfying coverage
+                ///     based on the literal.
+                std::copy_if(
+                    a_coverage.m_zeroes.begin(),
+                    a_coverage.m_zeroes.end(),
+                    std::inserter(
+                        l_literal_coverage.m_zeroes,
+                        l_literal_coverage.m_zeroes.begin()
+                    ),
+                    [l_literal](
+                        const zero* a_zero
+                    )
+                    {
+                        return covers(l_literal, *a_zero);
+                    }
                 );
 
+                l_subcoverages.emplace(
+                    std::pair{
+                        l_literal_coverage.m_zeroes.size(),
+                        l_literal
+                    },
+                    l_literal_coverage
+                );
+                
+            }
+
+            //////////////////////////////////////////////////////
+            /// 2. Populate satisfying coverage in the map entries
+            //////////////////////////////////////////////////////
+
+            for (const one* l_one : a_coverage.m_ones)
+            {
+                auto l_insertion_position =
+                    std::find_if(
+                        l_subcoverages.begin(),
+                        l_subcoverages.end(),
+                        [l_one](
+                            const auto& a_entry
+                        )
+                        {
+                            return covers(a_entry.first.second, *l_one);
+                        }
+                    );
+
+                l_insertion_position->second.m_ones.insert(l_one);
+                
+            }
+
+            #pragma endregion
+
             /////////////////////////////////////////////////////
-            /// 2. Realize ONLY the subtrees along trajectories.
-            ///     NOTE: All literals which are not on trajectories
-            ///     are already absent from the map's keys.
+            /// 2. Realize ALL subtrees from the map
             /////////////////////////////////////////////////////
 
-            realize_subtrees(
-                a_remaining_literals,
-                l_subcoverages
-            );
+            #pragma region REALIZE SUBTREES
+
+            for (const auto& [l_pair, l_coverage] : l_subcoverages)
+            {
+                std::set<literal> l_subtree_remaining_literals;
+
+                /// Filter all remaining literals based on
+                ///     literal that is being taken care of
+                ///     by this edge to the subtree.
+                std::copy_if(
+                    a_remaining_literals.begin(),
+                    a_remaining_literals.end(),
+                    std::inserter(
+                        l_subtree_remaining_literals,
+                        l_subtree_remaining_literals.begin()),
+                    [l_pair](
+                        literal a_literal
+                    )
+                    {
+                        return index(a_literal) != index(l_pair.second);
+                    }
+                );
+
+                m_realized_subtrees.emplace(
+                    l_pair,
+                    tree(
+                        l_subtree_remaining_literals,
+                        l_coverage
+                    )
+                );
+
+            }
+
+            #pragma endregion
 
         }
 
@@ -161,298 +252,41 @@ namespace karnaugh
 
         }
 
-    private:
-        static std::map<std::pair<size_t, literal>, coverage> subcoverages(
-            const std::set<literal>& a_literals,
-            const coverage& a_coverage
+        friend std::ostream& operator<<(
+            std::ostream& a_ostream,
+            const tree& a_tree
         )
         {
-            /// Key type is std::pair<size_t, literal> because we
-            ///     can populate size_t with dissatisfying cov size.
-            ///     This will ensure the map is sorted by minimum
-            ///     dissatisfying coverage.
-            std::map<std::pair<size_t, literal>, coverage> l_result;
+            if (a_tree.m_realized_subtrees.size() == 0)
+                return a_ostream;
 
-            /////////////////////////////////////////////////////
-            /// 1. Populate subcoverage map based on the
-            ///     dissatisfying coverage of each literal.
-            /////////////////////////////////////////////////////
-            
-            for (literal l_literal : a_literals)
+            bool l_add_separator = false;
+
+            for (const auto& [l_pair, l_subtree] : a_tree.m_realized_subtrees)
             {
-                coverage l_literal_coverage;
-                
-                /// Filter the dissatisfying coverage
-                ///     based on the literal.
-                std::copy_if(
-                    a_coverage.m_zeroes.begin(),
-                    a_coverage.m_zeroes.end(),
-                    std::inserter(
-                        l_literal_coverage.m_zeroes,
-                        l_literal_coverage.m_zeroes.begin()
-                    ),
-                    [l_literal](
-                        const zero* a_zero
-                    )
-                    {
-                        return covers(l_literal, *a_zero);
-                    }
-                );
+                if (!l_subtree.m_noncontradictory)
+                    continue;
 
-                l_result.emplace(
-                    std::pair{
-                        l_literal_coverage.m_zeroes.size(),
-                        l_literal
-                    },
-                    l_literal_coverage
-                );
+                if (l_add_separator)
+                    a_ostream << "+";
+
+                if (l_subtree.m_realized_subtrees.size() > 0)
+                    /// NOT a leaf node
+                    a_ostream << l_pair.second << "(" << l_subtree << ")";
+                else
+                    /// IS a leaf node
+                    a_ostream << l_pair.second;
+
+                l_add_separator = true;
                 
             }
 
-            //////////////////////////////////////////////////////
-            /// 2. Populate satisfying coverage in the map entries
-            //////////////////////////////////////////////////////
+            return a_ostream;
 
-            for (const one* l_one : a_coverage.m_ones)
-            {
-                auto l_insertion_position =
-                    std::find_if(
-                        l_result.begin(),
-                        l_result.end(),
-                        [l_one](
-                            const auto& a_entry
-                        )
-                        {
-                            return covers(a_entry.first.second, *l_one);
-                        }
-                    );
-
-                l_insertion_position->second.m_ones.insert(l_one);
-                
-            }
-
-            return l_result;
-            
         }
 
-        void realize_subtrees(
-            const std::set<literal>& a_remaining_literals,
-            const std::map<std::pair<size_t, literal>, coverage>& a_subcoverages
-        )
-        {
-            for (const auto& [l_pair, l_coverage] : a_subcoverages)
-            {
-                std::set<literal> l_subtree_remaining_literals;
-
-                /// Filter all remaining literals based on
-                ///     literal that is being taken care of
-                ///     by this edge to the subtree.
-                std::copy_if(
-                    a_remaining_literals.begin(),
-                    a_remaining_literals.end(),
-                    std::inserter(
-                        l_subtree_remaining_literals,
-                        l_subtree_remaining_literals.begin()),
-                    [l_pair](
-                        literal a_literal
-                    )
-                    {
-                        return index(a_literal) != index(l_pair.second);
-                    }
-                );
-
-                m_realized_subtrees.emplace(
-                    l_pair,
-                    tree(
-                        l_subtree_remaining_literals,
-                        l_coverage
-                    )
-                );
-
-            }
-
-        }
-        
     };
 
-    // struct product : public std::set<literal>
-    // {
-    //     bool operator()(
-    //         const input& a_input
-    //     ) const
-    //     {
-    //         return std::all_of(
-    //             begin(),
-    //             end(),
-    //             [&a_input](
-    //                 literal a_literal
-    //             )
-    //             {
-    //                 return covers(a_literal, a_input);
-    //             }
-    //         );
-    //     }
-
-    //     void operator*=(
-    //         const product& a_other
-    //     )
-    //     {
-    //         insert(a_other.begin(), a_other.end());
-    //     }
-        
-    // };
-
-    // struct sum : public std::set<product>
-    // {
-    //     bool operator()(
-    //         const input& a_input
-    //     ) const
-    //     {
-    //         return std::any_of(
-    //             begin(),
-    //             end(),
-    //             [&a_input](
-    //                 const product& a_product
-    //             )
-    //             {
-    //                 return a_product(a_input);
-    //             }
-    //         );
-    //     }
-
-    //     void operator+=(
-    //         const sum& a_other
-    //     )
-    //     {
-    //         insert(a_other.begin(), a_other.end());
-    //     }
-        
-    // };
-
-    // inline sum generalize(
-    //     const product& a_covering_product,
-    //     const coverage& a_coverage
-    // )
-    // {
-    //     sum l_result;
-
-    //     l_result +=
-        
-    //     /// Base case of recursion.
-    //     if (a_coverage.m_zeroes.size() == 0 ||
-    //         a_coverage.m_ones.size() == 0)
-    //         return l_result;
-        
-    //     /////////////////////////////////////////////////////
-    //     /// 1. Determine literal coverages given our coverage.
-    //     /////////////////////////////////////////////////////
-            
-    //     /// Key type is std::pair<size_t, literal> because we
-    //     ///     can populate size_t with dissatisfying cov size.
-    //     ///     This will ensure the map is sorted by minimum
-    //     ///     dissatisfying coverage.
-    //     std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
-
-    //     #pragma region DETERMINE SUBCOVERAGES
-
-    //     /////////////////////////////////////////////////////
-    //     /// 1. Populate subcoverage map based on the
-    //     ///     dissatisfying coverage of each literal.
-    //     /////////////////////////////////////////////////////
-        
-    //     for (literal l_literal : a_literals)
-    //     {
-    //         coverage l_literal_coverage;
-            
-    //         /// Filter the dissatisfying coverage
-    //         ///     based on the literal.
-    //         std::copy_if(
-    //             a_coverage.m_zeroes.begin(),
-    //             a_coverage.m_zeroes.end(),
-    //             std::inserter(
-    //                 l_literal_coverage.m_zeroes,
-    //                 l_literal_coverage.m_zeroes.begin()
-    //             ),
-    //             [l_literal](
-    //                 const zero* a_zero
-    //             )
-    //             {
-    //                 return covers(l_literal, *a_zero);
-    //             }
-    //         );
-
-    //         l_subcoverages.emplace(
-    //             std::pair{
-    //                 l_literal_coverage.m_zeroes.size(),
-    //                 l_literal
-    //             },
-    //             l_literal_coverage
-    //         );
-            
-    //     }
-
-    //     //////////////////////////////////////////////////////
-    //     /// 2. Populate satisfying coverage in the map entries
-    //     //////////////////////////////////////////////////////
-
-    //     for (const one* l_one : a_coverage.m_ones)
-    //     {
-    //         auto l_insertion_position =
-    //             std::find_if(
-    //                 l_subcoverages.begin(),
-    //                 l_subcoverages.end(),
-    //                 [l_one](
-    //                     const auto& a_entry
-    //                 )
-    //                 {
-    //                     return covers(a_entry.first.second, *l_one);
-    //                 }
-    //             );
-
-    //         l_insertion_position->second.m_ones.insert(l_one);
-            
-    //     }
-
-    //     #pragma endregion
-
-    //     /////////////////////////////////////////////////////
-    //     /// 2. Realize ONLY the subtrees along trajectories.
-    //     ///     NOTE: All literals which are not on trajectories
-    //     ///     are already absent from the map's keys.
-    //     /////////////////////////////////////////////////////
-
-    //     #pragma region VISIT SUBTREES
-            
-    //     for (const auto& [l_pair, l_coverage] : l_subcoverages)
-    //     {
-    //         std::set<literal> l_subtree_remaining_literals;
-
-    //         /// Filter all remaining literals based on
-    //         ///     literal that is being taken care of
-    //         ///     by this edge to the subtree.
-    //         std::copy_if(
-    //             a_literals.begin(),
-    //             a_literals.end(),
-    //             std::inserter(
-    //                 l_subtree_remaining_literals,
-    //                 l_subtree_remaining_literals.begin()),
-    //             [l_pair](
-    //                 literal a_literal
-    //             )
-    //             {
-    //                 return index(a_literal) != index(l_pair.second);
-    //             }
-    //         );
-
-            
-
-    //     }
-
-    //     #pragma endregion
-
-
-    // }
-    
     #pragma endregion
     
 }
