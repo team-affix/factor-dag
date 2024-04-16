@@ -19,28 +19,24 @@ namespace karnaugh
 
     typedef std::vector<bool> input;
 
-    typedef input zero;
-    
-    typedef input one;
-
     struct coverage
     {
-        std::set<const zero*> m_zeroes;
-        std::set<const one*> m_ones;
+        std::set<const input*> m_zeroes;
+        std::set<const input*> m_ones;
     };
 
     inline coverage make_coverage(
-        const std::set<zero>& a_zeroes,
-        const std::set<one>& a_ones
+        const std::set<input>& a_zeroes,
+        const std::set<input>& a_ones
     )
     {
         coverage l_result;
         
         for (const auto& a_zero : a_zeroes)
-            l_result.m_zeroes.insert((const zero*)&a_zero);
+            l_result.m_zeroes.insert((const input*)&a_zero);
             
         for (const auto& a_one : a_ones)
-            l_result.m_ones.insert((const one*)&a_one);
+            l_result.m_ones.insert((const input*)&a_one);
 
         return l_result;
                 
@@ -96,14 +92,14 @@ namespace karnaugh
     {
         std::map<std::pair<size_t, literal>, tree> m_realized_subtrees;
 
-        bool m_noncontradictory;
+        bool m_satisfiable;
 
     public:
         tree(
             const std::set<literal>& a_remaining_literals,
             const coverage& a_coverage
         ) :
-            m_noncontradictory(a_coverage.m_ones.size() > 0)
+            m_satisfiable(a_coverage.m_ones.size() > 0)
         {
             /// Base case of recursion.
             if (a_coverage.m_zeroes.size() == 0 ||
@@ -141,7 +137,7 @@ namespace karnaugh
                         l_literal_coverage.m_zeroes.begin()
                     ),
                     [l_literal](
-                        const zero* a_zero
+                        const input* a_zero
                     )
                     {
                         return covers(l_literal, *a_zero);
@@ -162,7 +158,7 @@ namespace karnaugh
             /// 2. Populate satisfying coverage in the map entries
             //////////////////////////////////////////////////////
 
-            for (const one* l_one : a_coverage.m_ones)
+            for (const input* l_one : a_coverage.m_ones)
             {
                 auto l_insertion_position =
                     std::find_if(
@@ -231,7 +227,7 @@ namespace karnaugh
             ///     We reached a leaf node
             ///     that has been fully realized.
             if (m_realized_subtrees.size() == 0)
-                return m_noncontradictory;
+                return m_satisfiable;
 
             /////////////////////////////////////////////////////
             /////// RECURSIVE CALL TO ALL COVERING PATHS ////////
@@ -264,7 +260,7 @@ namespace karnaugh
 
             for (const auto& [l_pair, l_subtree] : a_tree.m_realized_subtrees)
             {
-                if (!l_subtree.m_noncontradictory)
+                if (!l_subtree.m_satisfiable)
                     continue;
 
                 if (l_add_separator)

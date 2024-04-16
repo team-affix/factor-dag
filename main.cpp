@@ -36,14 +36,14 @@ void test_make_coverage(
 
 )
 {
-    std::set<zero> l_zeroes =
+    std::set<input> l_zeroes =
     {
         {0, 0, 0, 0},
         {0, 1, 1, 0},
         {0, 0, 1, 1}
     };
 
-    std::set<one> l_ones =
+    std::set<input> l_ones =
     {
         {1, 0, 0, 1},
         {1, 1, 0, 0},
@@ -62,10 +62,10 @@ void test_make_coverage(
     ///     elements are contained in the
     ///     resulting vectors.
 
-    for (const zero& l_zero : l_zeroes)
+    for (const input& l_zero : l_zeroes)
         assert(l_coverage.m_zeroes.contains(&l_zero));
 
-    for (const one& l_one : l_ones)
+    for (const input& l_one : l_ones)
         assert(l_coverage.m_ones.contains(&l_one));
 
 }
@@ -140,14 +140,14 @@ void test_small_generalization_0(
 {
     constexpr bool ENABLE_DEBUG_LOGS = false;
     
-    std::set<zero> l_zeroes =
+    std::set<input> l_zeroes =
     {
         { 0, 1, 1 },
         { 0, 1, 0 },
         { 0, 0, 0 }
     };
 
-    std::set<one> l_ones =
+    std::set<input> l_ones =
     {
         { 1, 1, 1 },
         { 1, 0, 1 },
@@ -184,7 +184,7 @@ void test_small_generalization_1(
 {
     constexpr bool ENABLE_DEBUG_LOGS = false;
     
-    std::set<zero> l_zeroes =
+    std::set<input> l_zeroes =
     {
         {0, 1, 0, 0},
         {0, 0, 0, 1},
@@ -194,7 +194,7 @@ void test_small_generalization_1(
         {0, 1, 1, 0}
     };
 
-    std::set<one> l_ones =
+    std::set<input> l_ones =
     {
         {1, 0, 0, 0},
         {1, 1, 0, 1},
@@ -243,7 +243,7 @@ void test_small_generalization_2(
 {
     constexpr bool ENABLE_DEBUG_LOGS = false;
     
-    std::set<zero> l_zeroes =
+    std::set<input> l_zeroes =
     {
         {0, 0, 0, 0},
         {0, 0, 0, 1},
@@ -253,7 +253,7 @@ void test_small_generalization_2(
         {1, 1, 1, 1},
     };
 
-    std::set<one> l_ones =
+    std::set<input> l_ones =
     {
         {0, 0, 1, 1},
         {0, 1, 0, 0},
@@ -303,7 +303,7 @@ void test_small_generalization_3(
 {
     constexpr bool ENABLE_DEBUG_LOGS = false;
 
-    std::set<zero> l_zeroes =
+    std::set<input> l_zeroes =
     {
         {0, 1, 1, 0},
         {1, 1, 0, 0},
@@ -312,7 +312,7 @@ void test_small_generalization_3(
         {1, 0, 1, 0},
     };
 
-    std::set<one> l_ones =
+    std::set<input> l_ones =
     {
         {0, 0, 0, 0},
         {0, 1, 0, 0},
@@ -378,13 +378,13 @@ void example_fn(
 
 )
 {
-    std::set<zero> l_zeroes
+    std::set<input> l_zeroes
     {
         {0, 1, 1, 0, 0},
         {1, 0, 0, 1, 1},
     };
 
-    std::set<one> l_ones
+    std::set<input> l_ones
     {
         {1, 1, 1, 1, 1},
         {1, 1, 0, 0, 0},
