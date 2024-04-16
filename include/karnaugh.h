@@ -28,6 +28,23 @@ namespace karnaugh
         std::set<const one*> m_ones;
     };
 
+    inline coverage make_coverage(
+        const std::set<zero>& a_zeroes,
+        const std::set<one>& a_ones
+    )
+    {
+        coverage l_result;
+        
+        for (const auto& a_zero : a_zeroes)
+            l_result.m_zeroes.insert(&a_zero);
+            
+        for (const auto& a_one : a_ones)
+            l_result.m_ones.insert(&a_one);
+
+        return l_result;
+                
+    }
+
     typedef uint32_t literal;
 
     inline uint32_t index(
@@ -50,6 +67,21 @@ namespace karnaugh
     )
     {
         return a_input->at(index(a_literal)) == sign(a_literal);
+    }
+
+    inline std::set<literal> make_literals(
+        const int a_variable_count
+    )
+    {
+        std::set<literal> l_result;
+
+        const int l_literal_count = 2 * a_variable_count;
+
+        for (int i = 0; i < l_literal_count; i++)
+            l_result.insert(i);
+
+        return l_result;
+        
     }
 
     #pragma endregion
