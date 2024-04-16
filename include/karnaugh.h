@@ -73,7 +73,9 @@ namespace karnaugh
             if (a_coverage.m_zeroes.size() == 0)
                 return;
             
-            /// 1. Determine literal coverages of unsatisfying inputs.
+            /////////////////////////////////////////////////////
+            /// 1. Determine literal coverages given our coverage.
+            /////////////////////////////////////////////////////
             
             std::map<std::pair<size_t, literal>, coverage> l_subcoverages =
                 subcoverages(
@@ -81,9 +83,11 @@ namespace karnaugh
                     a_coverage
                 );
 
+            /////////////////////////////////////////////////////
             /// 2. Realize ONLY the subtrees along trajectories.
             ///     NOTE: All literals which are not on trajectories
             ///     are already absent from the map's keys.
+            /////////////////////////////////////////////////////
 
             realize_subtrees(
                 a_remaining_literals,
@@ -102,7 +106,10 @@ namespace karnaugh
             if (m_realized_subtrees.size() == 0)
                 return true;
 
+            /////////////////////////////////////////////////////
             /// 1. Determine trajectory of input.
+            /////////////////////////////////////////////////////
+
             std::map<std::pair<size_t, literal>, model>::const_iterator
                 l_submodel = std::find_if(
                     m_realized_subtrees.begin(),
@@ -120,7 +127,10 @@ namespace karnaugh
             if (l_submodel == m_realized_subtrees.end())
                 return false;
 
+            /////////////////////////////////////////////////////
             /// 2. Send the input down its trajectory.
+            /////////////////////////////////////////////////////
+
             return l_submodel->second.evaluate(a_input);
             
         }
@@ -138,8 +148,17 @@ namespace karnaugh
             const coverage& a_coverage
         )
         {
-            std::map<std::pair<size_t, literal>, coverage> l_result;
+            /// Key type is std::pair<size_t, literal> because we
+            ///     can populate size_t with dissatisfying cov size.
+            ///     This will ensure the map is sorted by minimum
+            ///     dissatisfying coverage.
+            std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
 
+            /////////////////////////////////////////////////////
+            /// 1. Populate subcoverage map based on the
+            ///     dissatisfying coverage of each literal.
+            /////////////////////////////////////////////////////
+            
             for (literal l_literal : a_literals)
             {
                 coverage l_literal_coverage;
@@ -161,7 +180,7 @@ namespace karnaugh
                     }
                 );
 
-                l_result.emplace(
+                l_subcoverages.emplace(
                     std::pair{
                         l_literal_coverage.m_zeroes.size(),
                         l_literal
@@ -171,12 +190,16 @@ namespace karnaugh
                 
             }
 
+            //////////////////////////////////////////////////////
+            /// 2. Populate satisfying coverage in the map entries
+            //////////////////////////////////////////////////////
+
             for (const satisfying_input* l_one : a_coverage.m_ones)
             {
                 auto l_insertion_position =
                     std::find_if(
-                        l_result.begin(),
-                        l_result.end(),
+                        l_subcoverages.begin(),
+                        l_subcoverages.end(),
                         [l_one](
                             const auto& a_entry
                         )
@@ -189,14 +212,26 @@ namespace karnaugh
                 
             }
 
-            std::map<std::pair<size_t, literal>, coverage>::iterator
-                l_removal_iterator = l_result.begin();
+            /////////////////////////////////////////////////////
+            /// 3. Filter based on non-zero satisfying coverage.
+            /////////////////////////////////////////////////////
 
-            while (l_removal_iterator != l_result.end())
-                l_removal_iterator =
-                    l_removal_iterator->second.m_ones.size() == 0 ?
-                    l_result.erase(l_removal_iterator) :
-                    ++l_removal_iterator;
+            std::map<std::pair<size_t, literal>, coverage> l_result;
+
+            std::copy_if(
+                l_subcoverages.begin(),
+                l_subcoverages.end(),
+                std::inserter(
+                    l_result,
+                    l_result.begin()
+                ),
+                [](
+                    const auto& a_entry
+                )
+                {
+                    return a_entry.second.m_ones.size() > 0;
+                }
+            );
 
             return l_result;
             
