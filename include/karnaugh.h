@@ -95,14 +95,18 @@ namespace karnaugh
     {
         std::map<std::pair<size_t, literal>, tree> m_realized_subtrees;
 
+        bool m_noncontradictory;
+
     public:
         tree(
             const std::set<literal>& a_remaining_literals,
             const coverage& a_coverage
-        )
+        ) :
+            m_noncontradictory(a_coverage.m_ones.size() > 0)
         {
             /// Base case of recursion.
-            if (a_coverage.m_zeroes.size() == 0)
+            if (a_coverage.m_zeroes.size() == 0 ||
+                a_coverage.m_ones.size() == 0)
                 return;
             
             /////////////////////////////////////////////////////
@@ -136,7 +140,7 @@ namespace karnaugh
             ///     We reached a leaf node
             ///     that has been fully realized.
             if (m_realized_subtrees.size() == 0)
-                return true;
+                return m_noncontradictory;
 
             /////////////////////////////////////////////////////
             /// 1. Determine trajectory of input.
@@ -184,7 +188,7 @@ namespace karnaugh
             ///     can populate size_t with dissatisfying cov size.
             ///     This will ensure the map is sorted by minimum
             ///     dissatisfying coverage.
-            std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
+            std::map<std::pair<size_t, literal>, coverage> l_result;
 
             /////////////////////////////////////////////////////
             /// 1. Populate subcoverage map based on the
@@ -212,7 +216,7 @@ namespace karnaugh
                     }
                 );
 
-                l_subcoverages.emplace(
+                l_result.emplace(
                     std::pair{
                         l_literal_coverage.m_zeroes.size(),
                         l_literal
@@ -230,8 +234,8 @@ namespace karnaugh
             {
                 auto l_insertion_position =
                     std::find_if(
-                        l_subcoverages.begin(),
-                        l_subcoverages.end(),
+                        l_result.begin(),
+                        l_result.end(),
                         [l_one](
                             const auto& a_entry
                         )
@@ -243,27 +247,6 @@ namespace karnaugh
                 l_insertion_position->second.m_ones.insert(l_one);
                 
             }
-
-            /////////////////////////////////////////////////////
-            /// 3. Filter based on non-zero satisfying coverage.
-            /////////////////////////////////////////////////////
-
-            std::map<std::pair<size_t, literal>, coverage> l_result;
-
-            std::copy_if(
-                l_subcoverages.begin(),
-                l_subcoverages.end(),
-                std::inserter(
-                    l_result,
-                    l_result.begin()
-                ),
-                [](
-                    const auto& a_entry
-                )
-                {
-                    return a_entry.second.m_ones.size() > 0;
-                }
-            );
 
             return l_result;
             
