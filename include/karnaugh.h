@@ -173,16 +173,20 @@ namespace karnaugh
 
             for (const satisfying_input* l_one : a_coverage.m_ones)
             {
-                for (auto& [l_pair, l_coverage] : l_result)
-                {
-                    if (!covers(l_pair.second, l_one))
-                        continue;
+                auto l_insertion_position =
+                    std::find_if(
+                        l_result.begin(),
+                        l_result.end(),
+                        [l_one](
+                            const auto& a_entry
+                        )
+                        {
+                            return covers(a_entry.first.second, l_one);
+                        }
+                    );
 
-                    l_coverage.m_ones.insert(l_one);
-
-                    break;
-                    
-                }
+                l_insertion_position->second.m_ones.insert(l_one);
+                
             }
 
             std::map<std::pair<size_t, literal>, coverage>::iterator
@@ -211,8 +215,8 @@ namespace karnaugh
                 ///     literal that is being taken care of
                 ///     by this edge to the subtree.
                 std::copy_if(
-                    l_subtree_remaining_literals.begin(),
-                    l_subtree_remaining_literals.end(),
+                    a_remaining_literals.begin(),
+                    a_remaining_literals.end(),
                     std::inserter(
                         l_subtree_remaining_literals,
                         l_subtree_remaining_literals.begin()),
