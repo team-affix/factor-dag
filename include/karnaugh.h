@@ -8,6 +8,7 @@
 #include <set>
 #include <algorithm>
 #include <ostream>
+#include <functional>
 
 namespace karnaugh
 {
@@ -19,24 +20,14 @@ namespace karnaugh
 
     typedef std::vector<bool> input;
 
-    // inline coverage make_coverage(
-    //     const std::set<input>& a_zeroes,
-    //     const std::set<input>& a_ones
-    // )
-    // {
-    //     coverage l_result;
-        
-    //     for (const auto& a_zero : a_zeroes)
-    //         l_result.m_zeroes.insert((const input*)&a_zero);
-            
-    //     for (const auto& a_one : a_ones)
-    //         l_result.m_ones.insert((const input*)&a_one);
-
-    //     return l_result;
-                
-    // }
-
     typedef uint32_t literal;
+
+    #pragma endregion
+
+    ////////////////////////////////////////////
+    ///////////// HELPER FUNCTIONS /////////////
+    ////////////////////////////////////////////
+    #pragma region HELPER FUNCTIONS
 
     inline uint32_t index(
         literal a_literal
@@ -60,20 +51,71 @@ namespace karnaugh
         return a_input.at(index(a_literal)) == sign(a_literal);
     }
 
-    // inline std::set<literal> make_literals(
-    //     const int a_variable_count
-    // )
-    // {
-    //     std::set<literal> l_result;
+    inline std::set<const input*> make_pointers(
+        const std::set<input>& a_inputs
+    )
+    {
+        std::set<const input*> l_result;
 
-    //     const int l_literal_count = 2 * a_variable_count;
+        for (const input& l_input : a_inputs)
+            l_result.insert(&l_input);
 
-    //     for (int i = 0; i < l_literal_count; i++)
-    //         l_result.insert(i);
-
-    //     return l_result;
+        return l_result;
         
-    // }
+    }
+
+    inline std::set<literal> make_literals(
+        const int a_variable_count
+    )
+    {
+        std::set<literal> l_result;
+
+        const int l_literal_count = 2 * a_variable_count;
+
+        for (int i = 0; i < l_literal_count; i++)
+            l_result.insert(i);
+
+        return l_result;
+        
+    }
+
+    template<typename KEY, typename VALUE>
+    inline std::map<KEY, std::set<VALUE>> group_by(
+        const std::set<VALUE>& a_values,
+        const std::function<std::set<KEY>(VALUE)>& a_grouper
+    )
+    {
+        std::map<KEY, std::set<VALUE>> l_result;
+
+        for (const VALUE& l_value : a_values)
+        {
+            std::set<KEY> l_keys = a_partitioner(l_value);
+
+            for (const KEY& l_key : l_keys)
+                l_result[l_key].insert(l_value);
+            
+        }
+
+        return l_result;
+        
+    }
+
+    template<typename KEY, typename VALUE>
+    inline std::map<KEY, std::set<VALUE>> group_by(
+        const std::set<VALUE>& a_values,
+        const std::function<KEY(VALUE)>& a_partitioner
+    )
+    {
+        return group_by<KEY, VALUE>(
+            a_values,
+            [&a_partitioner](
+                VALUE a_value
+            )
+            {
+                return std::set<KEY> { a_partitioner(a_value) };
+            }
+        );
+    }
 
     #pragma endregion
 
@@ -101,90 +143,80 @@ namespace karnaugh
                 return;
             
             /////////////////////////////////////////////////////
-            /// 1. Determine literal coverages given our coverage.
+            /// 1. Group each zero into subsets,
+            ///      defined by coverage by a literal.
             /////////////////////////////////////////////////////
             
-            #pragma region DETERMINE SUBCOVERAGES
-
-            struct coverage
-            {
-                std::set<const input*> m_zeroes;
-                std::set<const input*> m_ones;
-            };
-            
-            /// Key type is std::pair<size_t, literal> because we
-            ///     can populate size_t with dissatisfying cov size.
-            ///     This will ensure the map is sorted by minimum
-            ///     dissatisfying coverage.
-            std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
-
-            /////////////////////////////////////////////////////
-            /// 1. Populate subcoverage map based on the
-            ///     dissatisfying coverage of each literal.
-            /////////////////////////////////////////////////////
-            
-            for (literal l_literal : a_remaining_literals)
-            {
-                coverage l_literal_coverage;
-                
-                /// Filter the dissatisfying coverage
-                ///     based on the literal.
-                std::copy_if(
-                    a_zeroes.begin(),
-                    a_zeroes.end(),
-                    std::inserter(
-                        l_literal_coverage.m_zeroes,
-                        l_literal_coverage.m_zeroes.begin()
-                    ),
-                    [l_literal](
+            std::map<literal, std::set<const input*>> l_zero_cover =
+                group_by<literal, const input*>(
+                    a_zeroes,
+                    [&a_remaining_literals](
                         const input* a_zero
                     )
                     {
-                        return covers(l_literal, *a_zero);
+                        std::set<literal> l_result;
+
+                        for (const literal l_literal : a_remaining_literals)
+                        {
+                            if (covers(l_literal, *a_zero))
+                                l_result.insert(l_literal);
+                        }
+
+                        return l_result;
+                        
+                    }
+                );
+            
+            //////////////////////////////////////////////////////
+            /// 2. Sort literals in ascending dissatisfying cov. size.
+            //////////////////////////////////////////////////////
+            
+            /// Key type is std::pair<size_t, literal> because we
+            ///     can populate size_t with dissatisfying cov size.
+            ///     This will ensure the set is sorted by minimum
+            ///     dissatisfying coverage.
+            std::set<std::pair<size_t, literal>> l_sorted_literals;
+
+            for (const literal l_literal : a_remaining_literals)
+                l_sorted_literals.emplace(l_zero_cover[l_literal].size(), l_literal);
+
+            //////////////////////////////////////////////////////
+            /// 3. Partition the ones based on the literal
+            ///     that has minimum dissatisfying coverage 
+            ///     that simultaneously covers it.
+            //////////////////////////////////////////////////////
+
+            std::map<literal, std::set<const input*>> l_one_partition =
+                group_by<literal, const input*>(
+                    a_ones,
+                    [&l_sorted_literals](
+                        const input* a_input
+                    )
+                    {
+                        auto l_first_covering_literal =
+                            std::find_if(
+                                l_sorted_literals.begin(),
+                                l_sorted_literals.end(),
+                                [a_input](
+                                    const auto& a_entry
+                                )
+                                {
+                                    return covers(a_entry.second, *a_input);
+                                }
+                            );
+
+                        return l_first_covering_literal->second;
+                        
                     }
                 );
 
-                l_subcoverages.emplace(
-                    std::pair{
-                        l_literal_coverage.m_zeroes.size(),
-                        l_literal
-                    },
-                    l_literal_coverage
-                );
-                
-            }
-
-            //////////////////////////////////////////////////////
-            /// 2. Populate satisfying coverage in the map entries
-            //////////////////////////////////////////////////////
-
-            for (const input* l_one : a_ones)
-            {
-                auto l_insertion_position =
-                    std::find_if(
-                        l_subcoverages.begin(),
-                        l_subcoverages.end(),
-                        [l_one](
-                            const auto& a_entry
-                        )
-                        {
-                            return covers(a_entry.first.second, *l_one);
-                        }
-                    );
-
-                l_insertion_position->second.m_ones.insert(l_one);
-                
-            }
-
-            #pragma endregion
-
             /////////////////////////////////////////////////////
-            /// 2. Realize ALL subtrees from the map
+            /// 4. Realize ALL subtrees.
             /////////////////////////////////////////////////////
 
             #pragma region REALIZE SUBTREES
 
-            for (const auto& [l_pair, l_coverage] : l_subcoverages)
+            for (const auto& [l_coverage_size, l_literal] : l_sorted_literals)
             {
                 std::set<literal> l_subtree_remaining_literals;
 
@@ -197,20 +229,20 @@ namespace karnaugh
                     std::inserter(
                         l_subtree_remaining_literals,
                         l_subtree_remaining_literals.begin()),
-                    [l_pair](
+                    [l_literal](
                         literal a_literal
                     )
                     {
-                        return index(a_literal) != index(l_pair.second);
+                        return index(a_literal) != index(l_literal);
                     }
                 );
 
                 m_realized_subtrees.emplace(
-                    l_pair,
+                    std::pair(l_coverage_size, l_literal),
                     model(
                         l_subtree_remaining_literals,
-                        l_coverage.m_zeroes,
-                        l_coverage.m_ones
+                        l_zero_cover[l_literal],
+                        l_one_partition[l_literal]
                     )
                 );
 
@@ -295,35 +327,6 @@ namespace karnaugh
 
             return a_ostream;
 
-        }
-
-    private:
-        static std::set<literal> make_literals(
-            const size_t a_variable_count
-        )
-        {
-            std::set<literal> l_result;
-
-            const int l_literal_count = 2 * a_variable_count;
-
-            for (int i = 0; i < l_literal_count; i++)
-                l_result.insert(i);
-
-            return l_result;
-            
-        }
-
-        static std::set<const input*> make_pointers(
-            const std::set<input>& a_inputs
-        )
-        {
-            std::set<const input*> l_result;
-
-            for (const input& l_input : a_inputs)
-                l_result.insert(&l_input);
-
-            return l_result;
-            
         }
 
     };
