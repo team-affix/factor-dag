@@ -154,7 +154,7 @@ void test_small_generalization_0(
         { 0, 0, 1 }
     };
     
-    karnaugh::tree l_tree = generalize(
+    karnaugh::model l_tree(
         3,
         l_zeroes,
         l_ones
@@ -205,7 +205,7 @@ void test_small_generalization_1(
         {1, 0, 1, 0}
     };
 
-    karnaugh::tree l_tree = generalize(
+    karnaugh::model l_tree(
         4,
         l_zeroes,
         l_ones
@@ -266,7 +266,7 @@ void test_small_generalization_2(
         {1, 0, 1, 0},
     };
 
-    tree l_tree = generalize(
+    model l_tree(
         4,
         l_zeroes,
         l_ones
@@ -323,7 +323,7 @@ void test_small_generalization_3(
         {1, 0, 1, 1},
     };
 
-    tree l_tree = generalize(
+    model l_tree(
         4,
         l_zeroes,
         l_ones
@@ -396,7 +396,7 @@ void example_fn(
         {1, 0, 0, 1, 0},
     };
 
-    tree l_tree = generalize(
+    model l_tree(
         5,
         l_zeroes,
         l_ones

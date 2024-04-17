@@ -82,23 +82,22 @@ namespace karnaugh
     ////////////////////////////////////////////
     #pragma region MODELING
 
-    class tree
+    class model
     {
-        std::map<std::pair<size_t, literal>, tree> m_realized_subtrees;
+        std::map<std::pair<size_t, literal>, model> m_realized_subtrees;
 
         bool m_satisfiable;
 
-    public:
-        tree(
+        model(
             const std::set<literal>& a_remaining_literals,
-            const std::set<const input*>& a_zero_cover,
-            const std::set<const input*>& a_one_block
+            const std::set<const input*>& a_zeroes,
+            const std::set<const input*>& a_ones
         ) :
-            m_satisfiable(a_one_block.size() > 0)
+            m_satisfiable(a_ones.size() > 0)
         {
             /// Base case of recursion.
-            if (a_zero_cover.size() == 0 ||
-                a_one_block.size() == 0)
+            if (a_zeroes.size() == 0 ||
+                a_ones.size() == 0)
                 return;
             
             /////////////////////////////////////////////////////
@@ -107,32 +106,35 @@ namespace karnaugh
             
             #pragma region DETERMINE SUBCOVERAGES
 
-            /////////////////////////////////////////////////////
-            /// 1. Populate subcoverage map based on the
-            ///     dissatisfying coverage of each literal.
-            /////////////////////////////////////////////////////
-
+            struct coverage
+            {
+                std::set<const input*> m_zeroes;
+                std::set<const input*> m_ones;
+            };
+            
             /// Key type is std::pair<size_t, literal> because we
             ///     can populate size_t with dissatisfying cov size.
             ///     This will ensure the map is sorted by minimum
             ///     dissatisfying coverage.
+            std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
 
-            /// Construct the structure containing covers of zeroes.
-            std::map<std::pair<size_t, literal>, std::set<const input*>>
-                l_zero_subcovers;
+            /////////////////////////////////////////////////////
+            /// 1. Populate subcoverage map based on the
+            ///     dissatisfying coverage of each literal.
+            /////////////////////////////////////////////////////
             
             for (literal l_literal : a_remaining_literals)
             {
-                std::set<const input*> l_zero_subcover;
+                coverage l_literal_coverage;
                 
                 /// Filter the dissatisfying coverage
                 ///     based on the literal.
                 std::copy_if(
-                    a_zero_cover.begin(),
-                    a_zero_cover.end(),
+                    a_zeroes.begin(),
+                    a_zeroes.end(),
                     std::inserter(
-                        l_zero_subcover,
-                        l_zero_subcover.begin()
+                        l_literal_coverage.m_zeroes,
+                        l_literal_coverage.m_zeroes.begin()
                     ),
                     [l_literal](
                         const input* a_zero
@@ -142,29 +144,26 @@ namespace karnaugh
                     }
                 );
 
-                l_zero_subcovers[
-                    std::pair {
-                        l_zero_subcover.size(),
+                l_subcoverages.emplace(
+                    std::pair{
+                        l_literal_coverage.m_zeroes.size(),
                         l_literal
-                    }
-                ] = l_zero_subcover;
-
+                    },
+                    l_literal_coverage
+                );
+                
             }
 
             //////////////////////////////////////////////////////
-            /// 2. Determine where the satisfying inputs will go.
+            /// 2. Populate satisfying coverage in the map entries
             //////////////////////////////////////////////////////
 
-            /// Construct the structure containing blocks of ones.
-            std::map<std::pair<size_t, literal>, std::set<const input*>>
-                l_one_subblocks;
-
-            for (const input* l_one : a_one_block)
+            for (const input* l_one : a_ones)
             {
                 auto l_insertion_position =
                     std::find_if(
-                        l_zero_subcovers.begin(),
-                        l_zero_subcovers.end(),
+                        l_subcoverages.begin(),
+                        l_subcoverages.end(),
                         [l_one](
                             const auto& a_entry
                         )
@@ -173,7 +172,7 @@ namespace karnaugh
                         }
                     );
 
-                l_one_subblocks[l_insertion_position->first].insert(l_one);
+                l_insertion_position->second.m_ones.insert(l_one);
                 
             }
 
@@ -185,7 +184,7 @@ namespace karnaugh
 
             #pragma region REALIZE SUBTREES
 
-            for (const auto& [l_pair, l_cover] : l_zero_subcovers)
+            for (const auto& [l_pair, l_coverage] : l_subcoverages)
             {
                 std::set<literal> l_subtree_remaining_literals;
 
@@ -208,16 +207,31 @@ namespace karnaugh
 
                 m_realized_subtrees.emplace(
                     l_pair,
-                    tree(
+                    model(
                         l_subtree_remaining_literals,
-                        l_cover,
-                        l_one_subblocks[l_pair]
+                        l_coverage.m_zeroes,
+                        l_coverage.m_ones
                     )
                 );
 
             }
 
             #pragma endregion
+
+        }
+
+    public:
+        model(
+            const size_t a_variable_count,
+            const std::set<input>& a_zeroes,
+            const std::set<input>& a_ones
+        ) :
+            model(
+                make_literals(a_variable_count),
+                make_pointers(a_zeroes),
+                make_pointers(a_ones)
+            )
+        {
 
         }
 
@@ -243,7 +257,7 @@ namespace karnaugh
                 )
                 {
                     const literal& l_literal = a_entry.first.second;
-                    const tree& l_tree = a_entry.second;
+                    const model& l_tree = a_entry.second;
                     return covers(l_literal, a_input) && l_tree(a_input);
                 }
             );
@@ -252,7 +266,7 @@ namespace karnaugh
 
         friend std::ostream& operator<<(
             std::ostream& a_ostream,
-            const tree& a_tree
+            const model& a_tree
         )
         {
             if (a_tree.m_realized_subtrees.size() == 0)
@@ -283,40 +297,36 @@ namespace karnaugh
 
         }
 
-    };
+    private:
+        static std::set<literal> make_literals(
+            const size_t a_variable_count
+        )
+        {
+            std::set<literal> l_result;
 
-    inline tree generalize(
-        const size_t a_variable_count,
-        const std::set<input>& a_zeroes,
-        const std::set<input>& a_ones
-    )
-    {
-        /// Construct pointers to inputs.
-        std::set<const input*> l_zero_pointers;
-        std::set<const input*> l_one_pointers;
-        
-        for (const auto& a_zero : a_zeroes)
-            l_zero_pointers.insert((const input*)&a_zero);
+            const int l_literal_count = 2 * a_variable_count;
+
+            for (int i = 0; i < l_literal_count; i++)
+                l_result.insert(i);
+
+            return l_result;
             
-        for (const auto& a_one : a_ones)
-            l_one_pointers.insert((const input*)&a_one);
+        }
 
-        /// Generate starting set of literals
-        ///     for generalization.
-        std::set<literal> l_literals;
+        static std::set<const input*> make_pointers(
+            const std::set<input>& a_inputs
+        )
+        {
+            std::set<const input*> l_result;
 
-        const int l_literal_count = 2 * a_variable_count;
+            for (const input& l_input : a_inputs)
+                l_result.insert(&l_input);
 
-        for (int i = 0; i < l_literal_count; i++)
-            l_literals.insert(i);
+            return l_result;
+            
+        }
 
-        return tree(
-            l_literals,
-            l_zero_pointers,
-            l_one_pointers
-        );
-
-    }
+    };
 
     #pragma endregion
     
