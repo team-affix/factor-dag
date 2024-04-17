@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <ostream>
 #include <functional>
+#include "karnaugh_utils.h"
 
 namespace karnaugh
 {
@@ -21,13 +22,6 @@ namespace karnaugh
     typedef std::vector<bool> input;
 
     typedef uint32_t literal;
-
-    #pragma endregion
-
-    ////////////////////////////////////////////
-    ///////////// HELPER FUNCTIONS /////////////
-    ////////////////////////////////////////////
-    #pragma region HELPER FUNCTIONS
 
     inline uint32_t index(
         literal a_literal
@@ -51,19 +45,6 @@ namespace karnaugh
         return a_input.at(index(a_literal)) == sign(a_literal);
     }
 
-    inline std::set<const input*> make_pointers(
-        const std::set<input>& a_inputs
-    )
-    {
-        std::set<const input*> l_result;
-
-        for (const input& l_input : a_inputs)
-            l_result.insert(&l_input);
-
-        return l_result;
-        
-    }
-
     inline std::set<literal> make_literals(
         const int a_variable_count
     )
@@ -77,44 +58,6 @@ namespace karnaugh
 
         return l_result;
         
-    }
-
-    template<typename KEY, typename VALUE>
-    inline std::map<KEY, std::set<VALUE>> group_by(
-        const std::set<VALUE>& a_values,
-        const std::function<std::set<KEY>(VALUE)>& a_grouper
-    )
-    {
-        std::map<KEY, std::set<VALUE>> l_result;
-
-        for (const VALUE& l_value : a_values)
-        {
-            std::set<KEY> l_keys = a_partitioner(l_value);
-
-            for (const KEY& l_key : l_keys)
-                l_result[l_key].insert(l_value);
-            
-        }
-
-        return l_result;
-        
-    }
-
-    template<typename KEY, typename VALUE>
-    inline std::map<KEY, std::set<VALUE>> group_by(
-        const std::set<VALUE>& a_values,
-        const std::function<KEY(VALUE)>& a_partitioner
-    )
-    {
-        return group_by<KEY, VALUE>(
-            a_values,
-            [&a_partitioner](
-                VALUE a_value
-            )
-            {
-                return std::set<KEY> { a_partitioner(a_value) };
-            }
-        );
     }
 
     #pragma endregion
@@ -148,7 +91,7 @@ namespace karnaugh
             /////////////////////////////////////////////////////
             
             std::map<literal, std::set<const input*>> l_zero_cover =
-                group_by<literal, const input*>(
+                utils::group_by<literal, const input*>(
                     a_zeroes,
                     [&a_remaining_literals](
                         const input* a_zero
@@ -187,7 +130,7 @@ namespace karnaugh
             //////////////////////////////////////////////////////
 
             std::map<literal, std::set<const input*>> l_one_partition =
-                group_by<literal, const input*>(
+                utils::group_by<literal, const input*>(
                     a_ones,
                     [&l_sorted_literals](
                         const input* a_input
@@ -260,8 +203,8 @@ namespace karnaugh
         ) :
             model(
                 make_literals(a_variable_count),
-                make_pointers(a_zeroes),
-                make_pointers(a_ones)
+                utils::pointers(a_zeroes),
+                utils::pointers(a_ones)
             )
         {
 

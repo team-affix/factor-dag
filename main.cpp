@@ -115,24 +115,24 @@ void test_literal_covers(
     
 }
 
-// void test_make_literals(
+void test_make_literals(
 
-// )
-// {
-//     constexpr size_t VAR_COUNT = 10;
+)
+{
+    constexpr size_t VAR_COUNT = 10;
     
-//     std::set<literal> l_literals = make_literals(VAR_COUNT);
+    std::set<literal> l_literals = make_literals(VAR_COUNT);
 
-//     /// The number of literals generated should
-//     ///     always be twice the number of variables.
-//     assert(l_literals.size() == 2 * VAR_COUNT);
+    /// The number of literals generated should
+    ///     always be twice the number of variables.
+    assert(l_literals.size() == 2 * VAR_COUNT);
 
-//     /// Ensure that all expected literals exist
-//     ///     within the resultant set.
-//     for (literal i = 0; i < l_literals.size(); i++)
-//         assert(l_literals.contains(i));
+    /// Ensure that all expected literals exist
+    ///     within the resultant set.
+    for (literal i = 0; i < l_literals.size(); i++)
+        assert(l_literals.contains(i));
     
-// }
+}
 
 void test_small_generalization_0(
 
@@ -368,7 +368,7 @@ void unit_test_main(
     TEST(test_literal_index);
     TEST(test_literal_sign);
     TEST(test_literal_covers);
-    // TEST(test_make_literals);
+    TEST(test_make_literals);
     TEST(test_small_generalization_0);
     TEST(test_small_generalization_1);
     TEST(test_small_generalization_2);
