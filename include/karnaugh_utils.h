@@ -33,12 +33,17 @@ namespace utils
         
     // }
 
-    template<typename KEY, typename VALUE>
-    inline std::map<KEY, std::set<VALUE>> group_by(
+    template<typename VALUE, typename CALLABLE>
+    inline auto cover(
         const std::set<VALUE>& a_values,
-        const std::function<std::set<KEY>(VALUE)>& a_grouper
+        const CALLABLE& a_grouper
     )
     {
+        using KEY = 
+            std::decay_t<
+                decltype(*a_grouper(VALUE()).begin())
+            >;
+        
         std::map<KEY, std::set<VALUE>> l_result;
 
         for (const VALUE& l_value : a_values)
@@ -54,19 +59,19 @@ namespace utils
         
     }
 
-    template<typename KEY, typename VALUE>
-    inline std::map<KEY, std::set<VALUE>> group_by(
+    template<typename VALUE, typename CALLABLE>
+    inline auto partition(
         const std::set<VALUE>& a_values,
-        const std::function<KEY(VALUE)>& a_partitioner
+        const CALLABLE& a_partitioner
     )
     {
-        return group_by<KEY, VALUE>(
+        return cover(
             a_values,
             [&a_partitioner](
                 VALUE a_value
             )
             {
-                return std::set<KEY> { a_partitioner(a_value) };
+                return std::set{ a_partitioner(a_value) };
             }
         );
     }

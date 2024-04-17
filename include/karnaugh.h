@@ -91,7 +91,7 @@ namespace karnaugh
             /////////////////////////////////////////////////////
             
             std::map<literal, std::set<const input*>> l_zero_cover =
-                utils::group_by<literal, const input*>(
+                utils::cover(
                     a_zeroes,
                     [&a_remaining_literals](
                         const input* a_zero
@@ -130,7 +130,7 @@ namespace karnaugh
             //////////////////////////////////////////////////////
 
             std::map<literal, std::set<const input*>> l_one_partition =
-                utils::group_by<literal, const input*>(
+                utils::partition(
                     a_ones,
                     [&l_sorted_literals](
                         const input* a_input

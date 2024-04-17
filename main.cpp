@@ -17,6 +17,52 @@ using namespace karnaugh;
 ////////////////////////////////////////////
 #pragma region UNIT TESTS
 
+void test_utils_pointers(
+
+)
+{
+    std::set<int> l_ints = {1, 2, 60, 4, 5};
+
+    std::set<const int*> l_pointers = utils::pointers(l_ints);
+
+    assert(l_pointers.size() == l_ints.size());
+
+    for (const int* l_ptr : l_pointers)
+        assert(l_ints.contains(*l_ptr));
+    
+}
+
+void test_utils_cover(
+
+)
+{
+    std::set<int> l_ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    std::map<std::string, int> l_cover = utils::cover(
+        l_ints,
+        [](
+            const int& a_int
+        )
+        {
+            std::set<std::string> l_result{
+                std::to_string(double(a_int)),
+                std::to_string(double(a_int) / 2),
+                std::to_string(double(a_int) / 3),
+            };
+            
+            return l_result;
+        }
+    );
+    
+}
+
+void test_utils_partition(
+
+)
+{
+
+}
+
 void test_input_construction(
 
 )
@@ -363,8 +409,9 @@ void unit_test_main(
 {
     constexpr bool ENABLE_DEBUG_LOGS = true;
 
+    TEST(test_utils_pointers);
+    TEST(test_utils_cover);
     TEST(test_input_construction);
-    // TEST(test_make_coverage);
     TEST(test_literal_index);
     TEST(test_literal_sign);
     TEST(test_literal_covers);
