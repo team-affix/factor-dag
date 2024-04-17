@@ -19,28 +19,22 @@ namespace karnaugh
 
     typedef std::vector<bool> input;
 
-    struct coverage
-    {
-        std::set<const input*> m_zeroes;
-        std::set<const input*> m_ones;
-    };
-
-    inline coverage make_coverage(
-        const std::set<input>& a_zeroes,
-        const std::set<input>& a_ones
-    )
-    {
-        coverage l_result;
+    // inline coverage make_coverage(
+    //     const std::set<input>& a_zeroes,
+    //     const std::set<input>& a_ones
+    // )
+    // {
+    //     coverage l_result;
         
-        for (const auto& a_zero : a_zeroes)
-            l_result.m_zeroes.insert((const input*)&a_zero);
+    //     for (const auto& a_zero : a_zeroes)
+    //         l_result.m_zeroes.insert((const input*)&a_zero);
             
-        for (const auto& a_one : a_ones)
-            l_result.m_ones.insert((const input*)&a_one);
+    //     for (const auto& a_one : a_ones)
+    //         l_result.m_ones.insert((const input*)&a_one);
 
-        return l_result;
+    //     return l_result;
                 
-    }
+    // }
 
     typedef uint32_t literal;
 
@@ -66,20 +60,20 @@ namespace karnaugh
         return a_input.at(index(a_literal)) == sign(a_literal);
     }
 
-    inline std::set<literal> make_literals(
-        const int a_variable_count
-    )
-    {
-        std::set<literal> l_result;
+    // inline std::set<literal> make_literals(
+    //     const int a_variable_count
+    // )
+    // {
+    //     std::set<literal> l_result;
 
-        const int l_literal_count = 2 * a_variable_count;
+    //     const int l_literal_count = 2 * a_variable_count;
 
-        for (int i = 0; i < l_literal_count; i++)
-            l_result.insert(i);
+    //     for (int i = 0; i < l_literal_count; i++)
+    //         l_result.insert(i);
 
-        return l_result;
+    //     return l_result;
         
-    }
+    // }
 
     #pragma endregion
 
@@ -97,13 +91,14 @@ namespace karnaugh
     public:
         tree(
             const std::set<literal>& a_remaining_literals,
-            const coverage& a_coverage
+            const std::set<const input*>& a_zero_cover,
+            const std::set<const input*>& a_one_block
         ) :
-            m_satisfiable(a_coverage.m_ones.size() > 0)
+            m_satisfiable(a_one_block.size() > 0)
         {
             /// Base case of recursion.
-            if (a_coverage.m_zeroes.size() == 0 ||
-                a_coverage.m_ones.size() == 0)
+            if (a_zero_cover.size() == 0 ||
+                a_one_block.size() == 0)
                 return;
             
             /////////////////////////////////////////////////////
@@ -112,29 +107,32 @@ namespace karnaugh
             
             #pragma region DETERMINE SUBCOVERAGES
 
-            /// Key type is std::pair<size_t, literal> because we
-            ///     can populate size_t with dissatisfying cov size.
-            ///     This will ensure the map is sorted by minimum
-            ///     dissatisfying coverage.
-            std::map<std::pair<size_t, literal>, coverage> l_subcoverages;
-
             /////////////////////////////////////////////////////
             /// 1. Populate subcoverage map based on the
             ///     dissatisfying coverage of each literal.
             /////////////////////////////////////////////////////
+
+            /// Key type is std::pair<size_t, literal> because we
+            ///     can populate size_t with dissatisfying cov size.
+            ///     This will ensure the map is sorted by minimum
+            ///     dissatisfying coverage.
+
+            /// Construct the structure containing covers of zeroes.
+            std::map<std::pair<size_t, literal>, std::set<const input*>>
+                l_zero_subcovers;
             
             for (literal l_literal : a_remaining_literals)
             {
-                coverage l_literal_coverage;
+                std::set<const input*> l_zero_subcover;
                 
                 /// Filter the dissatisfying coverage
                 ///     based on the literal.
                 std::copy_if(
-                    a_coverage.m_zeroes.begin(),
-                    a_coverage.m_zeroes.end(),
+                    a_zero_cover.begin(),
+                    a_zero_cover.end(),
                     std::inserter(
-                        l_literal_coverage.m_zeroes,
-                        l_literal_coverage.m_zeroes.begin()
+                        l_zero_subcover,
+                        l_zero_subcover.begin()
                     ),
                     [l_literal](
                         const input* a_zero
@@ -144,26 +142,29 @@ namespace karnaugh
                     }
                 );
 
-                l_subcoverages.emplace(
-                    std::pair{
-                        l_literal_coverage.m_zeroes.size(),
+                l_zero_subcovers[
+                    std::pair {
+                        l_zero_subcover.size(),
                         l_literal
-                    },
-                    l_literal_coverage
-                );
-                
+                    }
+                ] = l_zero_subcover;
+
             }
 
             //////////////////////////////////////////////////////
-            /// 2. Populate satisfying coverage in the map entries
+            /// 2. Determine where the satisfying inputs will go.
             //////////////////////////////////////////////////////
 
-            for (const input* l_one : a_coverage.m_ones)
+            /// Construct the structure containing blocks of ones.
+            std::map<std::pair<size_t, literal>, std::set<const input*>>
+                l_one_subblocks;
+
+            for (const input* l_one : a_one_block)
             {
                 auto l_insertion_position =
                     std::find_if(
-                        l_subcoverages.begin(),
-                        l_subcoverages.end(),
+                        l_zero_subcovers.begin(),
+                        l_zero_subcovers.end(),
                         [l_one](
                             const auto& a_entry
                         )
@@ -172,7 +173,7 @@ namespace karnaugh
                         }
                     );
 
-                l_insertion_position->second.m_ones.insert(l_one);
+                l_one_subblocks[l_insertion_position->first].insert(l_one);
                 
             }
 
@@ -184,7 +185,7 @@ namespace karnaugh
 
             #pragma region REALIZE SUBTREES
 
-            for (const auto& [l_pair, l_coverage] : l_subcoverages)
+            for (const auto& [l_pair, l_cover] : l_zero_subcovers)
             {
                 std::set<literal> l_subtree_remaining_literals;
 
@@ -209,7 +210,8 @@ namespace karnaugh
                     l_pair,
                     tree(
                         l_subtree_remaining_literals,
-                        l_coverage
+                        l_cover,
+                        l_one_subblocks[l_pair]
                     )
                 );
 
@@ -282,6 +284,39 @@ namespace karnaugh
         }
 
     };
+
+    inline tree generalize(
+        const size_t a_variable_count,
+        const std::set<input>& a_zeroes,
+        const std::set<input>& a_ones
+    )
+    {
+        /// Construct pointers to inputs.
+        std::set<const input*> l_zero_pointers;
+        std::set<const input*> l_one_pointers;
+        
+        for (const auto& a_zero : a_zeroes)
+            l_zero_pointers.insert((const input*)&a_zero);
+            
+        for (const auto& a_one : a_ones)
+            l_one_pointers.insert((const input*)&a_one);
+
+        /// Generate starting set of literals
+        ///     for generalization.
+        std::set<literal> l_literals;
+
+        const int l_literal_count = 2 * a_variable_count;
+
+        for (int i = 0; i < l_literal_count; i++)
+            l_literals.insert(i);
+
+        return tree(
+            l_literals,
+            l_zero_pointers,
+            l_one_pointers
+        );
+
+    }
 
     #pragma endregion
     

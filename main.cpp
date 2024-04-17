@@ -32,43 +32,43 @@ void test_input_construction(
     
 }
 
-void test_make_coverage(
+// void test_make_coverage(
 
-)
-{
-    std::set<input> l_zeroes =
-    {
-        {0, 0, 0, 0},
-        {0, 1, 1, 0},
-        {0, 0, 1, 1}
-    };
+// )
+// {
+//     std::set<input> l_zeroes =
+//     {
+//         {0, 0, 0, 0},
+//         {0, 1, 1, 0},
+//         {0, 0, 1, 1}
+//     };
 
-    std::set<input> l_ones =
-    {
-        {1, 0, 0, 1},
-        {1, 1, 0, 0},
-        {0, 1, 0, 0},
-        {0, 1, 0, 1}
-    };
+//     std::set<input> l_ones =
+//     {
+//         {1, 0, 0, 1},
+//         {1, 1, 0, 0},
+//         {0, 1, 0, 0},
+//         {0, 1, 0, 1}
+//     };
 
-    coverage l_coverage = make_coverage(l_zeroes, l_ones);
+//     coverage l_coverage = make_coverage(l_zeroes, l_ones);
 
-    /// Quick sanity check on sizes of results.
-    assert(l_coverage.m_zeroes.size() == l_zeroes.size());
-    assert(l_coverage.m_ones.size() == l_ones.size());
+//     /// Quick sanity check on sizes of results.
+//     assert(l_coverage.m_zeroes.size() == l_zeroes.size());
+//     assert(l_coverage.m_ones.size() == l_ones.size());
 
-    /// Loop through each initial vector,
-    ///     making sure the pointers to the
-    ///     elements are contained in the
-    ///     resulting vectors.
+//     /// Loop through each initial vector,
+//     ///     making sure the pointers to the
+//     ///     elements are contained in the
+//     ///     resulting vectors.
 
-    for (const input& l_zero : l_zeroes)
-        assert(l_coverage.m_zeroes.contains(&l_zero));
+//     for (const input& l_zero : l_zeroes)
+//         assert(l_coverage.m_zeroes.contains(&l_zero));
 
-    for (const input& l_one : l_ones)
-        assert(l_coverage.m_ones.contains(&l_one));
+//     for (const input& l_one : l_ones)
+//         assert(l_coverage.m_ones.contains(&l_one));
 
-}
+// }
 
 void test_literal_sign(
 
@@ -115,24 +115,24 @@ void test_literal_covers(
     
 }
 
-void test_make_literals(
+// void test_make_literals(
 
-)
-{
-    constexpr size_t VAR_COUNT = 10;
+// )
+// {
+//     constexpr size_t VAR_COUNT = 10;
     
-    std::set<literal> l_literals = make_literals(VAR_COUNT);
+//     std::set<literal> l_literals = make_literals(VAR_COUNT);
 
-    /// The number of literals generated should
-    ///     always be twice the number of variables.
-    assert(l_literals.size() == 2 * VAR_COUNT);
+//     /// The number of literals generated should
+//     ///     always be twice the number of variables.
+//     assert(l_literals.size() == 2 * VAR_COUNT);
 
-    /// Ensure that all expected literals exist
-    ///     within the resultant set.
-    for (literal i = 0; i < l_literals.size(); i++)
-        assert(l_literals.contains(i));
+//     /// Ensure that all expected literals exist
+//     ///     within the resultant set.
+//     for (literal i = 0; i < l_literals.size(); i++)
+//         assert(l_literals.contains(i));
     
-}
+// }
 
 void test_small_generalization_0(
 
@@ -154,9 +154,10 @@ void test_small_generalization_0(
         { 0, 0, 1 }
     };
     
-    karnaugh::tree l_tree(
-        make_literals(3),
-        make_coverage(l_zeroes, l_ones)
+    karnaugh::tree l_tree = generalize(
+        3,
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0}) == false);
@@ -204,9 +205,10 @@ void test_small_generalization_1(
         {1, 0, 1, 0}
     };
 
-    karnaugh::tree l_tree(
-        make_literals(4),
-        make_coverage(l_zeroes, l_ones)
+    karnaugh::tree l_tree = generalize(
+        4,
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0, 0}) == false);
@@ -264,9 +266,10 @@ void test_small_generalization_2(
         {1, 0, 1, 0},
     };
 
-    tree l_tree(
-        make_literals(4),
-        make_coverage(l_zeroes, l_ones)
+    tree l_tree = generalize(
+        4,
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0, 0}) == false);
@@ -320,9 +323,10 @@ void test_small_generalization_3(
         {1, 0, 1, 1},
     };
 
-    tree l_tree(
-        make_literals(4),
-        make_coverage(l_zeroes, l_ones)
+    tree l_tree = generalize(
+        4,
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0, 0}) == true);
@@ -360,11 +364,11 @@ void unit_test_main(
     constexpr bool ENABLE_DEBUG_LOGS = true;
 
     TEST(test_input_construction);
-    TEST(test_make_coverage);
+    // TEST(test_make_coverage);
     TEST(test_literal_index);
     TEST(test_literal_sign);
     TEST(test_literal_covers);
-    TEST(test_make_literals);
+    // TEST(test_make_literals);
     TEST(test_small_generalization_0);
     TEST(test_small_generalization_1);
     TEST(test_small_generalization_2);
@@ -392,9 +396,10 @@ void example_fn(
         {1, 0, 0, 1, 0},
     };
 
-    tree l_tree(
-        make_literals(5),
-        make_coverage(l_zeroes, l_ones)
+    tree l_tree = generalize(
+        5,
+        l_zeroes,
+        l_ones
     );
 
     std::cout << l_tree << std::endl;
