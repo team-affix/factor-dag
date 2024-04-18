@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <ostream>
 #include <functional>
+#include <stack>
 
 namespace karnaugh
 {
@@ -36,10 +37,10 @@ namespace karnaugh
 
     /// Filters the inputted set by
     ///     the supplied predicate.
-    template<typename T, typename CALLABLE>
+    template<typename T, typename FUNCTION>
     inline std::set<T> filter(
         const std::set<T>& a_vals,
-        const CALLABLE& a_query
+        const FUNCTION& a_query
     )
     {
         std::set<T> l_result;
@@ -61,10 +62,10 @@ namespace karnaugh
     /// Returns a cover (see set theory)
     ///     of an inputted set, grouped
     ///     by the supplied lambda.
-    template<typename VALUE, typename CALLABLE>
+    template<typename VALUE, typename FUNCTION>
     inline auto cover(
         const std::set<VALUE>& a_values,
-        const CALLABLE& a_grouper
+        const FUNCTION& a_grouper
     )
     {
         using KEY =
@@ -90,10 +91,10 @@ namespace karnaugh
     /// Returns a partition (see set theory)
     ///     of the inputted set, grouped by
     ///     the supplied lambda.
-    template<typename VALUE, typename CALLABLE>
+    template<typename VALUE, typename FUNCTION>
     inline auto partition(
         const std::set<VALUE>& a_values,
-        const CALLABLE& a_partitioner
+        const FUNCTION& a_partitioner
     )
     {
         return cover(
@@ -168,6 +169,7 @@ namespace karnaugh
 
         bool m_satisfiable;
 
+    public:
         tree(
             const std::set<literal>& a_remaining_literals,
             const std::set<const input*>& a_zeroes,
@@ -284,21 +286,6 @@ namespace karnaugh
 
         }
 
-    public:
-        tree(
-            const size_t a_variable_count,
-            const std::set<input>& a_zeroes,
-            const std::set<input>& a_ones
-        ) :
-            tree(
-                make_literals(a_variable_count),
-                karnaugh::pointers(a_zeroes),
-                karnaugh::pointers(a_ones)
-            )
-        {
-
-        }
-
         bool operator()(
             const input& a_input
         ) const
@@ -360,7 +347,7 @@ namespace karnaugh
             return a_ostream;
 
         }
-
+        
     };
 
     #pragma endregion
