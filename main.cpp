@@ -23,7 +23,7 @@ void test_utils_pointers(
 {
     std::set<int> l_ints = {1, 2, 60, 4, 5};
 
-    std::set<const int*> l_pointers = utils::pointers(l_ints);
+    std::set<const int*> l_pointers = pointers(l_ints);
 
     assert(l_pointers.size() == l_ints.size());
 
@@ -32,27 +32,136 @@ void test_utils_pointers(
     
 }
 
+void test_utils_filter(
+
+)
+{
+    std::set<int> l_ints =
+    {
+        11, 12, 13, 14, 15,
+        21, 22, 23, 24, 25,
+        31, 32, 33, 34, 35,
+        41, 42, 43, 44, 45,
+        51, 52, 53, 54, 55,
+        61, 62, 63, 64, 65,
+        71, 72, 73, 74, 75,
+    };
+
+    std::set<int> l_filter_0 = filter(
+        l_ints,
+        [](
+            int a_int
+        )
+        {
+            return a_int < 20;
+        }
+    );
+
+    std::set<int> l_filter_1 = filter(
+        l_ints,
+        [](
+            int a_int
+        )
+        {
+            return a_int < 30;
+        }
+    );
+
+    std::set<int> l_filter_2 = filter(
+        l_ints,
+        [](
+            int a_int
+        )
+        {
+            return a_int < 40;
+        }
+    );
+    
+    assert(l_filter_0 == std::set({
+        11, 12, 13, 14, 15,
+    }));
+
+    assert(l_filter_1 == std::set({
+        11, 12, 13, 14, 15,
+        21, 22, 23, 24, 25,
+    }));
+
+    assert(l_filter_2 == std::set({
+        11, 12, 13, 14, 15,
+        21, 22, 23, 24, 25,
+        31, 32, 33, 34, 35,
+    }));
+    
+}
+
 void test_utils_cover(
 
 )
 {
-    std::set<int> l_ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::set<int> l_ints = {0, 1, 2, 3};
 
-    std::map<std::string, int> l_cover = utils::cover(
+    std::map<double, std::set<int>> l_int_cover = cover(
         l_ints,
         [](
             const int& a_int
         )
         {
-            std::set<std::string> l_result{
-                std::to_string(double(a_int)),
-                std::to_string(double(a_int) / 2),
-                std::to_string(double(a_int) / 3),
+            std::set<double> l_result {
+                double(a_int),
+                double(a_int) / 2,
+                double(a_int) / 3,
             };
             
             return l_result;
         }
     );
+
+    assert(l_int_cover.size() == 8);
+
+    assert(l_int_cover[0.0] == std::set({0}));
+    assert(l_int_cover[1.0/3.0] == std::set({1}));
+    assert(l_int_cover[0.5] == std::set({1}));
+    assert(l_int_cover[2.0/3.0] == std::set({2}));
+    assert(l_int_cover[1.0] == std::set({1, 2, 3}));
+    assert(l_int_cover[1.5] ==  std::set({3}));
+    assert(l_int_cover[2.0] == std::set({2}));
+    assert(l_int_cover[3.0] == std::set({3}));
+
+    std::set<input> l_inputs =
+    {
+        {0, 1, 1},
+        {1, 0, 0},
+        {1, 0, 1},
+        {0, 0, 0},
+        {1, 1, 1},
+    };
+
+    std::map<literal, std::set<input>> l_input_cover =
+        cover(
+            l_inputs,
+            [](
+                const input& a_input
+            )
+            {
+                std::set<literal> l_result;
+
+                for (literal i = 0; i < 6; ++i)
+                    if (covers(i, a_input))
+                        l_result.insert(i);
+
+                return l_result;
+                
+            }
+        );
+
+        assert(l_input_cover.size() == 6);
+
+        assert(l_input_cover[0] == std::set<input>({ {0, 1, 1}, {0, 0, 0} }));
+        assert(l_input_cover[1] == std::set<input>({ {1, 0, 0}, {1, 0, 1}, {1, 1, 1} }));
+        assert(l_input_cover[2] == std::set<input>({ {1, 0, 0}, {1, 0, 1}, {0, 0, 0} }));
+        assert(l_input_cover[3] == std::set<input>({ {0, 1, 1}, {1, 1, 1} }));
+        assert(l_input_cover[4] == std::set<input>({ {1, 0, 0}, {0, 0, 0} }));
+        assert(l_input_cover[5] == std::set<input>({ {0, 1, 1}, {1, 0, 1}, {1, 1, 1} }));
     
 }
 
@@ -60,61 +169,65 @@ void test_utils_partition(
 
 )
 {
+    std::set<int> l_ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    std::map<int, std::set<int>> l_int_cover = partition(
+        l_ints,
+        [](
+            const int& a_int
+        )
+        {
+            return a_int % 3;
+        }
+    );
+
+    assert(l_int_cover.size() == 3);
+
+    assert(l_int_cover[0] == std::set({0, 3, 6, 9}));
+    assert(l_int_cover[1] == std::set({1, 4, 7, 10}));
+    assert(l_int_cover[2] == std::set({2, 5, 8}));
+
+    std::set<input> l_inputs =
+    {
+        {0, 1, 1},
+        {1, 0, 0},
+        {1, 0, 1},
+        {0, 0, 0},
+        {1, 1, 1},
+    };
+
+    std::map<literal, std::set<input>> l_input_cover =
+        partition(
+            l_inputs,
+            [](
+                const input& a_input
+            )
+            {
+                /// Returns the first literal,
+                ///     sorted by their index,
+                ///     that covers the input.
+                for (literal i = 0; i < 6; ++i)
+                    if (covers(i, a_input))
+                        return i;
+
+                return literal(0);
+                
+            }
+        );
+
+    assert(l_input_cover.size() == 2);
+
+    assert(l_input_cover[0] == std::set<input>({
+        {0, 1, 1},
+        {0, 0, 0},
+    }));
+    assert(l_input_cover[1] == std::set<input>({
+        {1, 0, 0},
+        {1, 0, 1},
+        {1, 1, 1},
+    }));
 
 }
-
-void test_input_construction(
-
-)
-{
-    input l_input = { 0, 1, 1, 0, 0, 1 };
-
-    assert(l_input[0] == 0);
-    assert(l_input[1] == 1);
-    assert(l_input[2] == 1);
-    assert(l_input[3] == 0);
-    assert(l_input[4] == 0);
-    assert(l_input[5] == 1);
-    
-}
-
-// void test_make_coverage(
-
-// )
-// {
-//     std::set<input> l_zeroes =
-//     {
-//         {0, 0, 0, 0},
-//         {0, 1, 1, 0},
-//         {0, 0, 1, 1}
-//     };
-
-//     std::set<input> l_ones =
-//     {
-//         {1, 0, 0, 1},
-//         {1, 1, 0, 0},
-//         {0, 1, 0, 0},
-//         {0, 1, 0, 1}
-//     };
-
-//     coverage l_coverage = make_coverage(l_zeroes, l_ones);
-
-//     /// Quick sanity check on sizes of results.
-//     assert(l_coverage.m_zeroes.size() == l_zeroes.size());
-//     assert(l_coverage.m_ones.size() == l_ones.size());
-
-//     /// Loop through each initial vector,
-//     ///     making sure the pointers to the
-//     ///     elements are contained in the
-//     ///     resulting vectors.
-
-//     for (const input& l_zero : l_zeroes)
-//         assert(l_coverage.m_zeroes.contains(&l_zero));
-
-//     for (const input& l_one : l_ones)
-//         assert(l_coverage.m_ones.contains(&l_one));
-
-// }
 
 void test_literal_sign(
 
@@ -200,7 +313,7 @@ void test_small_generalization_0(
         { 0, 0, 1 }
     };
     
-    karnaugh::model l_tree(
+    model l_tree(
         3,
         l_zeroes,
         l_ones
@@ -251,7 +364,7 @@ void test_small_generalization_1(
         {1, 0, 1, 0}
     };
 
-    karnaugh::model l_tree(
+    model l_tree(
         4,
         l_zeroes,
         l_ones
@@ -410,8 +523,9 @@ void unit_test_main(
     constexpr bool ENABLE_DEBUG_LOGS = true;
 
     TEST(test_utils_pointers);
+    TEST(test_utils_filter);
     TEST(test_utils_cover);
-    TEST(test_input_construction);
+    TEST(test_utils_partition);
     TEST(test_literal_index);
     TEST(test_literal_sign);
     TEST(test_literal_covers);
