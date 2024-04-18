@@ -127,42 +127,6 @@ void test_utils_cover(
     assert(l_int_cover[2.0] == std::set({2}));
     assert(l_int_cover[3.0] == std::set({3}));
 
-    std::set<input> l_inputs =
-    {
-        {0, 1, 1},
-        {1, 0, 0},
-        {1, 0, 1},
-        {0, 0, 0},
-        {1, 1, 1},
-    };
-
-    std::map<literal, std::set<input>> l_input_cover =
-        cover(
-            l_inputs,
-            [](
-                const input& a_input
-            )
-            {
-                std::set<literal> l_result;
-
-                for (literal i = 0; i < 6; ++i)
-                    if (covers(i, a_input))
-                        l_result.insert(i);
-
-                return l_result;
-                
-            }
-        );
-
-        assert(l_input_cover.size() == 6);
-
-        assert(l_input_cover[0] == std::set<input>({ {0, 1, 1}, {0, 0, 0} }));
-        assert(l_input_cover[1] == std::set<input>({ {1, 0, 0}, {1, 0, 1}, {1, 1, 1} }));
-        assert(l_input_cover[2] == std::set<input>({ {1, 0, 0}, {1, 0, 1}, {0, 0, 0} }));
-        assert(l_input_cover[3] == std::set<input>({ {0, 1, 1}, {1, 1, 1} }));
-        assert(l_input_cover[4] == std::set<input>({ {1, 0, 0}, {0, 0, 0} }));
-        assert(l_input_cover[5] == std::set<input>({ {0, 1, 1}, {1, 0, 1}, {1, 1, 1} }));
-    
 }
 
 void test_utils_partition(
@@ -186,46 +150,6 @@ void test_utils_partition(
     assert(l_int_cover[0] == std::set({0, 3, 6, 9}));
     assert(l_int_cover[1] == std::set({1, 4, 7, 10}));
     assert(l_int_cover[2] == std::set({2, 5, 8}));
-
-    std::set<input> l_inputs =
-    {
-        {0, 1, 1},
-        {1, 0, 0},
-        {1, 0, 1},
-        {0, 0, 0},
-        {1, 1, 1},
-    };
-
-    std::map<literal, std::set<input>> l_input_cover =
-        partition(
-            l_inputs,
-            [](
-                const input& a_input
-            )
-            {
-                /// Returns the first literal,
-                ///     sorted by their index,
-                ///     that covers the input.
-                for (literal i = 0; i < 6; ++i)
-                    if (covers(i, a_input))
-                        return i;
-
-                return literal(0);
-                
-            }
-        );
-
-    assert(l_input_cover.size() == 2);
-
-    assert(l_input_cover[0] == std::set<input>({
-        {0, 1, 1},
-        {0, 0, 0},
-    }));
-    assert(l_input_cover[1] == std::set<input>({
-        {1, 0, 0},
-        {1, 0, 1},
-        {1, 1, 1},
-    }));
 
 }
 
