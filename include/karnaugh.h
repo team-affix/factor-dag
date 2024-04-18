@@ -167,8 +167,6 @@ namespace karnaugh
     {
         std::map<literal, tree> m_realized_subtrees;
 
-        bool m_satisfiable;
-
         bool operator()(
             const input& a_input
         ) const
@@ -177,7 +175,7 @@ namespace karnaugh
             ///     We reached a leaf node
             ///     that has been fully realized.
             if (m_realized_subtrees.size() == 0)
-                return m_satisfiable;
+                return true;
 
             /////////////////////////////////////////////////////
             /////// RECURSIVE CALL TO ALL COVERING PATHS ////////
@@ -210,9 +208,6 @@ namespace karnaugh
 
             for (const auto& [l_literal, l_subtree] : a_tree.m_realized_subtrees)
             {
-                if (!l_subtree.m_satisfiable)
-                    continue;
-
                 if (l_add_separator)
                     a_ostream << "+";
 
@@ -241,8 +236,6 @@ namespace karnaugh
     {
         tree l_result;
 
-        l_result.m_satisfiable = a_ones.size() > 0;
-        
         /// Base case of recursion.
         if (a_zeroes.size() == 0 ||
             a_ones.size() == 0)
@@ -321,7 +314,7 @@ namespace karnaugh
 
         #pragma region REALIZE SUBTREES
 
-        for (const auto& [l_coverage_size, l_literal] : l_sorted_literals)
+        for (const auto& [l_literal, l_one_block] : l_one_partition)
         {
             /// Filter all remaining literals based on
             ///     literal that is being taken care of
@@ -342,7 +335,7 @@ namespace karnaugh
                 generalize(
                     l_subtree_remaining_literals,
                     l_zero_cover[l_literal],
-                    l_one_partition[l_literal]
+                    l_one_block
                 )
             );
 
