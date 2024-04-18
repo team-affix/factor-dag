@@ -237,7 +237,7 @@ void test_small_generalization_0(
         { 0, 0, 1 }
     };
     
-    tree l_tree(
+    tree l_tree = generalize(
         make_literals(3),
         pointers(l_zeroes),
         pointers(l_ones)
@@ -288,7 +288,7 @@ void test_small_generalization_1(
         {1, 0, 1, 0}
     };
 
-    tree l_tree(
+    tree l_tree = generalize(
         make_literals(4),
         pointers(l_zeroes),
         pointers(l_ones)
@@ -349,7 +349,7 @@ void test_small_generalization_2(
         {1, 0, 1, 0},
     };
 
-    tree l_tree(
+    tree l_tree = generalize(
         make_literals(4),
         pointers(l_zeroes),
         pointers(l_ones)
@@ -406,7 +406,7 @@ void test_small_generalization_3(
         {1, 0, 1, 1},
     };
 
-    tree l_tree(
+    tree l_tree = generalize(
         make_literals(4),
         pointers(l_zeroes),
         pointers(l_ones)
@@ -481,13 +481,11 @@ void example_fn(
         {1, 0, 0, 1, 0},
     };
 
-    tree l_tree(
+    tree l_tree = generalize(
         make_literals(5),
         pointers(l_zeroes),
         pointers(l_ones)
     );
-
-    auto l_leaves = l_tree.leaves();
 
     std::cout << l_tree << std::endl;
     

@@ -163,128 +163,11 @@ namespace karnaugh
     ////////////////////////////////////////////
     #pragma region MODELING
 
-    class tree
+    struct tree
     {
-        std::map<std::pair<size_t, literal>, tree> m_realized_subtrees;
+        std::map<literal, tree> m_realized_subtrees;
 
         bool m_satisfiable;
-
-    public:
-        tree(
-            const std::set<literal>& a_remaining_literals,
-            const std::set<const input*>& a_zeroes,
-            const std::set<const input*>& a_ones
-        ) :
-            m_satisfiable(a_ones.size() > 0)
-        {
-            /// Base case of recursion.
-            if (a_zeroes.size() == 0 ||
-                a_ones.size() == 0)
-                return;
-            
-            /////////////////////////////////////////////////////
-            /// 1. Group each zero into subsets,
-            ///      defined by coverage by a literal.
-            /////////////////////////////////////////////////////
-            
-            std::map<literal, std::set<const input*>> l_zero_cover =
-                cover(
-                    a_zeroes,
-                    [&a_remaining_literals](
-                        const input* a_zero
-                    )
-                    {
-                        return karnaugh::filter(
-                            a_remaining_literals,
-                            [a_zero](
-                                literal a_literal
-                            )
-                            {
-                                return covers(a_literal, *a_zero);
-                            }
-                        );
-                    }
-                );
-            
-            //////////////////////////////////////////////////////
-            /// 2. Sort literals in ascending dissatisfying cov. size.
-            //////////////////////////////////////////////////////
-            
-            /// Key type is std::pair<size_t, literal> because we
-            ///     can populate size_t with dissatisfying cov size.
-            ///     This will ensure the set is sorted by minimum
-            ///     dissatisfying coverage.
-            std::set<std::pair<size_t, literal>> l_sorted_literals;
-
-            for (const literal l_literal : a_remaining_literals)
-                l_sorted_literals.emplace(l_zero_cover[l_literal].size(), l_literal);
-
-            //////////////////////////////////////////////////////
-            /// 3. Partition the ones based on the literal
-            ///     that has minimum dissatisfying coverage 
-            ///     that simultaneously covers it.
-            //////////////////////////////////////////////////////
-
-            std::map<literal, std::set<const input*>> l_one_partition =
-                partition(
-                    a_ones,
-                    [&l_sorted_literals](
-                        const input* a_input
-                    )
-                    {
-                        auto l_first_covering_literal =
-                            std::find_if(
-                                l_sorted_literals.begin(),
-                                l_sorted_literals.end(),
-                                [a_input](
-                                    const auto& a_entry
-                                )
-                                {
-                                    return covers(a_entry.second, *a_input);
-                                }
-                            );
-
-                        return l_first_covering_literal->second;
-                        
-                    }
-                );
-
-            /////////////////////////////////////////////////////
-            /// 4. Realize ALL subtrees.
-            /////////////////////////////////////////////////////
-
-            #pragma region REALIZE SUBTREES
-
-            for (const auto& [l_coverage_size, l_literal] : l_sorted_literals)
-            {
-                /// Filter all remaining literals based on
-                ///     literal that is being taken care of
-                ///     by this edge to the subtree.
-                std::set<literal> l_subtree_remaining_literals =
-                    filter(
-                        a_remaining_literals,
-                        [l_literal](
-                            literal a_literal
-                        )
-                        {
-                            return index(a_literal) != index(l_literal);
-                        }
-                    );
-
-                m_realized_subtrees.emplace(
-                    std::pair(l_coverage_size, l_literal),
-                    tree(
-                        l_subtree_remaining_literals,
-                        l_zero_cover[l_literal],
-                        l_one_partition[l_literal]
-                    )
-                );
-
-            }
-
-            #pragma endregion
-
-        }
 
         bool operator()(
             const input& a_input
@@ -307,7 +190,7 @@ namespace karnaugh
                     const auto& a_entry
                 )
                 {
-                    const literal& l_literal = a_entry.first.second;
+                    const literal& l_literal = a_entry.first;
                     const tree& l_tree = a_entry.second;
                     return covers(l_literal, a_input) && l_tree(a_input);
                 }
@@ -325,7 +208,7 @@ namespace karnaugh
 
             bool l_add_separator = false;
 
-            for (const auto& [l_pair, l_subtree] : a_tree.m_realized_subtrees)
+            for (const auto& [l_literal, l_subtree] : a_tree.m_realized_subtrees)
             {
                 if (!l_subtree.m_satisfiable)
                     continue;
@@ -335,10 +218,10 @@ namespace karnaugh
 
                 if (l_subtree.m_realized_subtrees.size() > 0)
                     /// NOT a leaf node
-                    a_ostream << l_pair.second << "(" << l_subtree << ")";
+                    a_ostream << l_literal << "(" << l_subtree << ")";
                 else
                     /// IS a leaf node
-                    a_ostream << l_pair.second;
+                    a_ostream << l_literal;
 
                 l_add_separator = true;
                 
@@ -349,6 +232,127 @@ namespace karnaugh
         }
         
     };
+
+    inline tree generalize(
+        const std::set<literal>& a_remaining_literals,
+        const std::set<const input*>& a_zeroes,
+        const std::set<const input*>& a_ones
+    )
+    {
+        tree l_result;
+
+        l_result.m_satisfiable = a_ones.size() > 0;
+        
+        /// Base case of recursion.
+        if (a_zeroes.size() == 0 ||
+            a_ones.size() == 0)
+            return l_result;
+        
+        /////////////////////////////////////////////////////
+        /// 1. Group each zero into subsets,
+        ///      defined by coverage by a literal.
+        /////////////////////////////////////////////////////
+        
+        std::map<literal, std::set<const input*>> l_zero_cover =
+            cover(
+                a_zeroes,
+                [&a_remaining_literals](
+                    const input* a_zero
+                )
+                {
+                    return karnaugh::filter(
+                        a_remaining_literals,
+                        [a_zero](
+                            literal a_literal
+                        )
+                        {
+                            return covers(a_literal, *a_zero);
+                        }
+                    );
+                }
+            );
+        
+        //////////////////////////////////////////////////////
+        /// 2. Sort literals in ascending dissatisfying cov. size.
+        //////////////////////////////////////////////////////
+        
+        /// Key type is std::pair<size_t, literal> because we
+        ///     can populate size_t with dissatisfying cov size.
+        ///     This will ensure the set is sorted by minimum
+        ///     dissatisfying coverage.
+        std::set<std::pair<size_t, literal>> l_sorted_literals;
+
+        for (const literal l_literal : a_remaining_literals)
+            l_sorted_literals.emplace(l_zero_cover[l_literal].size(), l_literal);
+
+        //////////////////////////////////////////////////////
+        /// 3. Partition the ones based on the literal
+        ///     that has minimum dissatisfying coverage 
+        ///     that simultaneously covers it.
+        //////////////////////////////////////////////////////
+
+        std::map<literal, std::set<const input*>> l_one_partition =
+            partition(
+                a_ones,
+                [&l_sorted_literals](
+                    const input* a_input
+                )
+                {
+                    auto l_first_covering_literal =
+                        std::find_if(
+                            l_sorted_literals.begin(),
+                            l_sorted_literals.end(),
+                            [a_input](
+                                const auto& a_entry
+                            )
+                            {
+                                return covers(a_entry.second, *a_input);
+                            }
+                        );
+
+                    return l_first_covering_literal->second;
+                    
+                }
+            );
+
+        /////////////////////////////////////////////////////
+        /// 4. Realize ALL subtrees.
+        /////////////////////////////////////////////////////
+
+        #pragma region REALIZE SUBTREES
+
+        for (const auto& [l_coverage_size, l_literal] : l_sorted_literals)
+        {
+            /// Filter all remaining literals based on
+            ///     literal that is being taken care of
+            ///     by this edge to the subtree.
+            std::set<literal> l_subtree_remaining_literals =
+                filter(
+                    a_remaining_literals,
+                    [l_literal](
+                        literal a_literal
+                    )
+                    {
+                        return index(a_literal) != index(l_literal);
+                    }
+                );
+
+            l_result.m_realized_subtrees.emplace(
+                l_literal,
+                generalize(
+                    l_subtree_remaining_literals,
+                    l_zero_cover[l_literal],
+                    l_one_partition[l_literal]
+                )
+            );
+
+        }
+
+        #pragma endregion
+
+        return l_result;
+
+    }
 
     #pragma endregion
     
