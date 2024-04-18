@@ -238,9 +238,8 @@ void test_small_generalization_0(
     };
     
     tree l_tree = generalize(
-        make_literals(3),
-        pointers(l_zeroes),
-        pointers(l_ones)
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0}) == false);
@@ -289,9 +288,8 @@ void test_small_generalization_1(
     };
 
     tree l_tree = generalize(
-        make_literals(4),
-        pointers(l_zeroes),
-        pointers(l_ones)
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0, 0}) == false);
@@ -350,9 +348,8 @@ void test_small_generalization_2(
     };
 
     tree l_tree = generalize(
-        make_literals(4),
-        pointers(l_zeroes),
-        pointers(l_ones)
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0, 0}) == false);
@@ -407,9 +404,8 @@ void test_small_generalization_3(
     };
 
     tree l_tree = generalize(
-        make_literals(4),
-        pointers(l_zeroes),
-        pointers(l_ones)
+        l_zeroes,
+        l_ones
     );
 
     assert(l_tree({0, 0, 0, 0}) == true);

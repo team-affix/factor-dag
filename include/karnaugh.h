@@ -347,6 +347,21 @@ namespace karnaugh
 
     }
 
+    inline tree generalize(
+        const std::set<input>& a_zeroes,
+        const std::set<input>& a_ones
+    )
+    {
+        const size_t l_num_vars = a_zeroes.begin()->size();
+
+        return generalize(
+            make_literals(l_num_vars),
+            pointers(a_zeroes),
+            pointers(a_ones)
+        );
+        
+    }
+
     #pragma endregion
     
 }
