@@ -313,7 +313,7 @@ void test_small_generalization_0(
         { 0, 0, 1 }
     };
     
-    model l_tree(
+    tree l_tree(
         3,
         l_zeroes,
         l_ones
@@ -364,7 +364,7 @@ void test_small_generalization_1(
         {1, 0, 1, 0}
     };
 
-    model l_tree(
+    tree l_tree(
         4,
         l_zeroes,
         l_ones
@@ -425,7 +425,7 @@ void test_small_generalization_2(
         {1, 0, 1, 0},
     };
 
-    model l_tree(
+    tree l_tree(
         4,
         l_zeroes,
         l_ones
@@ -482,7 +482,7 @@ void test_small_generalization_3(
         {1, 0, 1, 1},
     };
 
-    model l_tree(
+    tree l_tree(
         4,
         l_zeroes,
         l_ones
@@ -557,7 +557,7 @@ void example_fn(
         {1, 0, 0, 1, 0},
     };
 
-    model l_tree(
+    tree l_tree(
         5,
         l_zeroes,
         l_ones

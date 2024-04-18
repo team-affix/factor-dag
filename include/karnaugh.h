@@ -12,7 +12,7 @@
 
 namespace karnaugh
 {
-    
+
     ////////////////////////////////////////////
     //////////// UTILITY FUNCTIONS /////////////
     ////////////////////////////////////////////
@@ -162,13 +162,13 @@ namespace karnaugh
     ////////////////////////////////////////////
     #pragma region MODELING
 
-    class model
+    class tree
     {
-        std::map<std::pair<size_t, literal>, model> m_realized_subtrees;
+        std::map<std::pair<size_t, literal>, tree> m_realized_subtrees;
 
         bool m_satisfiable;
 
-        model(
+        tree(
             const std::set<literal>& a_remaining_literals,
             const std::set<const input*>& a_zeroes,
             const std::set<const input*>& a_ones
@@ -271,7 +271,7 @@ namespace karnaugh
 
                 m_realized_subtrees.emplace(
                     std::pair(l_coverage_size, l_literal),
-                    model(
+                    tree(
                         l_subtree_remaining_literals,
                         l_zero_cover[l_literal],
                         l_one_partition[l_literal]
@@ -285,12 +285,12 @@ namespace karnaugh
         }
 
     public:
-        model(
+        tree(
             const size_t a_variable_count,
             const std::set<input>& a_zeroes,
             const std::set<input>& a_ones
         ) :
-            model(
+            tree(
                 make_literals(a_variable_count),
                 karnaugh::pointers(a_zeroes),
                 karnaugh::pointers(a_ones)
@@ -321,7 +321,7 @@ namespace karnaugh
                 )
                 {
                     const literal& l_literal = a_entry.first.second;
-                    const model& l_tree = a_entry.second;
+                    const tree& l_tree = a_entry.second;
                     return covers(l_literal, a_input) && l_tree(a_input);
                 }
             );
@@ -330,7 +330,7 @@ namespace karnaugh
 
         friend std::ostream& operator<<(
             std::ostream& a_ostream,
-            const model& a_tree
+            const tree& a_tree
         )
         {
             if (a_tree.m_realized_subtrees.size() == 0)
