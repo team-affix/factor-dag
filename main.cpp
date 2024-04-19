@@ -478,9 +478,8 @@ void example_fn(
     };
 
     tree l_tree = generalize(
-        make_literals(5),
-        pointers(l_zeroes),
-        pointers(l_ones)
+        l_zeroes,
+        l_ones
     );
 
     std::cout << l_tree << std::endl;
