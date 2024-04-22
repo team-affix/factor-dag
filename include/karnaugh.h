@@ -169,15 +169,57 @@ namespace karnaugh
     ////////////////////////////////////////////
     #pragma region MODELING
 
-    struct node
+    class node
     {
+        /// Defines the depth of the node in the tree.
+        uint32_t m_depth;
+
+        /// Defines the subtrees.
         const node* m_left_child;
         const node* m_right_child;
+
+    public:
+
+        node(
+            uint32_t a_depth,
+            const node* a_left_child,
+            const node* a_right_child
+        ) :
+            m_depth(a_depth),
+            m_left_child(a_left_child),
+            m_right_child(a_right_child)
+        {
+
+        }
+        
+        uint32_t depth(
+
+        ) const
+        {
+            return m_depth;
+        }
+
+        const node* left(
+
+        ) const
+        {
+            return m_left_child;
+        }
+
+        const node* right(
+
+        ) const
+        {
+            return m_right_child;
+        }
 
         bool operator<(
             const node& a_other
         ) const
         {
+            if (m_depth != a_other.m_depth)
+                return m_depth < a_other.m_depth;
+            
             if (m_left_child != a_other.m_left_child)
                 return m_left_child < a_other.m_left_child;
 
@@ -187,75 +229,61 @@ namespace karnaugh
             return false;
             
         }
-        
-    };
 
-    class global_node_sink
-    {
-        static std::set<node>* s_nodes;
-
-    public:
-        static const node* commit(
-            node&& a_node
-        )
+        class sink
         {
-            /// This insertion will contract
-            ///     any identical expressions.
-            return &*s_nodes->insert(
-                a_node
-            ).first;
-        }
+            static std::set<node>* s_nodes;
 
-        static std::set<node>* bind(
-            std::set<node>* a_nodes
-        )
-        {
-            /// Save the previously bound node sink
-            std::set<node>* l_result = s_nodes;
+        public:
+            static const node* emplace(
+                uint32_t a_depth,
+                const node* a_left_child,
+                const node* a_right_child
+            )
+            {
+                /// Apply simplification to node.
+                if (a_left_child == a_right_child)
+                    return a_left_child;
 
-            /// Bind to the new node sink
-            s_nodes = a_nodes;
+                /// This insertion will contract
+                ///     any identical expressions.
+                return &*s_nodes->emplace(
+                    a_depth, a_left_child, a_right_child
+                ).first;
 
-            /// Return the node sink that was unbound.
-            return l_result;
+            }
+
+            static std::set<node>* bind(
+                std::set<node>* a_nodes
+            )
+            {
+                /// Save the previously bound node sink
+                std::set<node>* l_result = s_nodes;
+
+                /// Bind to the new node sink
+                s_nodes = a_nodes;
+
+                /// Return the node sink that was unbound.
+                return l_result;
+                
+            }
             
-        }
+        };
         
     };
+
 
     inline const node* literal(
         uint32_t a_variable_index,
         bool a_sign
     )
     {
-        if (a_variable_index == 0)
-        {
-            /// Base case for recursion. Just construct
-            ///     the node with an edge in the signed direction.
-            return global_node_sink::commit(
-                node
-                {
-                    .m_left_child = !a_sign ? ONE : ZERO,
-                    .m_right_child = a_sign ? ONE : ZERO
-                }
+        return
+            node::sink::emplace(
+                a_variable_index,
+                !a_sign ? ONE : ZERO,
+                a_sign ? ONE : ZERO
             );
-        }
-
-        /// Make the recursive call. The resulting 
-        ///     node will have BOTH children point
-        ///     to the single result child.
-        const node* l_result_child =
-            literal(a_variable_index - 1, a_sign);
-
-        /// Construct the result node and return it.
-        return global_node_sink::commit(
-            node
-            {
-                .m_left_child = l_result_child,
-                .m_right_child = l_result_child
-            }
-        );
-        
     }
 
     inline const node* invert(
@@ -263,10 +291,8 @@ namespace karnaugh
         std::map<const node*, const node*>& a_cache
     )
     {
-        /// Invert the simple cases.
         if (a_node == ZERO)
             return ONE;
-
         if (a_node == ONE)
             return ZERO;
 
@@ -275,12 +301,10 @@ namespace karnaugh
         return CACHE(
             a_cache,
             a_node,
-            global_node_sink::commit(
-                node
-                {
-                    .m_left_child = invert(a_node->m_left_child, a_cache),
-                    .m_right_child = invert(a_node->m_right_child, a_cache)
-                }
+            node::sink::emplace(
+                a_node->depth(),
+                invert(a_node->left(), a_cache),
+                invert(a_node->right(), a_cache)
             )
         );
 
@@ -304,54 +328,54 @@ namespace karnaugh
         std::map<std::set<const node*>, const node*>& a_cache
     )
     {
-        /// Check simple cases.
+        /// If either operand is a zero,
+        ///     return the opposite operand.
         if (a_x == ZERO)
             return a_y;
-
         if (a_y == ZERO)
             return a_x;
 
+        /// If either operand is 1, just
+        ///     return 1.
         if (a_x == ONE || a_y == ONE)
             return ONE;
 
-        // /// Perform a lookup in the cache
-        // ///    and if not found, do recursion.
-        // const node* l_result = CACHE(
-        //     a_cache,
-        //     std::set({a_x, a_y}),
-        //     global_node_sink::commit(
-        //         node
-        //         {
-        //             .m_left_child = disjoin(a_x->m_left_child, a_y->m_left_child, a_cache),
-        //             .m_right_child = disjoin(a_x->m_right_child, a_y->m_right_child, a_cache)
-        //         }
-        //     )
-        // );
+        /// We need to make variable the
+        ///     nodes that we will recur on,
+        ///     due to the potential for
+        ///     differing node depths.
+        const node* l_x_left = a_x->left();
+        const node* l_y_left = a_y->left();
+        const node* l_x_right = a_x->right();
+        const node* l_y_right = a_y->right();
 
-        const node* l_result_left =
-            CACHE(
-                a_cache,
-                std::set({a_x->m_left_child, a_y->m_left_child}),
-                disjoin(a_x->m_left_child, a_y->m_left_child, a_cache)
-            );
-        
-        const node* l_result_right =
-            CACHE(
-                a_cache,
-                std::set({a_x->m_right_child, a_y->m_right_child}),
-                disjoin(a_x->m_right_child, a_y->m_right_child, a_cache)
-            );
+        /// If the depths differ, we mustn't
+        ///     traverse to the children of
+        ///     the higher-depth node.
+        if (a_x->depth() > a_y->depth())
+        {
+            l_x_left = a_x;
+            l_x_right = a_x;
+        }
+        else if (a_y->depth() > a_x->depth())
+        {
+            l_y_left = a_y;
+            l_y_right = a_y;
+        }
 
-        /// Last-minute simplification. If BOTH children
-        ///     of the disjunction are 1, return 1.
-        ///     this simplification must require that both
-        ///     children are antident, since if only one
-        ///     was antident, we would care to preserve the
-        ///     full details of the tree.
-        if (l_result_left == ONE && l_result_right == ONE)
-            return ONE;
+        /// Construct the cache key, which
+        ///     should be the sorted pair:
+        std::set<const node*> l_key = { a_x, a_y };
 
-        return l_result;
+        return CACHE(
+            a_cache,
+            l_key,
+            node::sink::emplace(
+                std::min(a_x->depth(), a_y->depth()),
+                disjoin(l_x_left, l_y_left, a_cache),
+                disjoin(l_x_right, l_y_right, a_cache)
+            )
+        );
 
     }
 
