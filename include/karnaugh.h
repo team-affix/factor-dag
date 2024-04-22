@@ -272,7 +272,6 @@ namespace karnaugh
         
     };
 
-
     inline const node* literal(
         uint32_t a_variable_index,
         bool a_sign

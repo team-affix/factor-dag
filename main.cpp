@@ -364,6 +364,8 @@ void test_literal_disjoin(
     std::set<node> l_result_1_nodes;
     std::set<node> l_result_2_nodes;
     std::set<node> l_result_3_nodes;
+    std::set<node> l_result_4_nodes;
+    std::set<node> l_result_5_nodes;
 
     node::sink::bind(&l_input_nodes);
 
@@ -371,6 +373,8 @@ void test_literal_disjoin(
     const node* l_a = literal(0, true);
     const node* l_b_bar = literal(1, false);
     const node* l_b = literal(1, true);
+    const node* l_c_bar = literal(2, false);
+    const node* l_c = literal(2, true);
 
     node::sink::bind(&l_result_0_nodes);
 
@@ -391,7 +395,10 @@ void test_literal_disjoin(
     
     assert(l_result_1_nodes.size() == 1);
 
+    assert(l_disjunction_1->depth() == 0);
     assert(l_disjunction_1->left() == ONE);
+    
+    assert(l_disjunction_1->right()->depth() == 1);
     assert(l_disjunction_1->right()->left() == ONE);
     assert(l_disjunction_1->right()->right() == ZERO);
 
@@ -401,7 +408,10 @@ void test_literal_disjoin(
     
     assert(l_result_2_nodes.size() == 1);
 
+    assert(l_disjunction_2->depth() == 0);
     assert(l_disjunction_2->left() == ONE);
+
+    assert(l_disjunction_2->right()->depth() == 1);
     assert(l_disjunction_2->right()->left() == ZERO);
     assert(l_disjunction_2->right()->right() == ONE);
     
@@ -413,6 +423,32 @@ void test_literal_disjoin(
     assert(l_disjunction_3->depth() == 0);
     assert(l_disjunction_3->left() == ZERO);
     assert(l_disjunction_3->right() == ONE);
+
+    node::sink::bind(&l_result_4_nodes);
+
+    const node* l_disjunction_4 = disjoin(l_a, l_c);
+
+    assert(l_result_4_nodes.size() == 1);
+
+    assert(l_disjunction_4->depth() == 0);
+    assert(l_disjunction_4->right() == ONE);
+
+    assert(l_disjunction_4->left()->depth() == 2);
+    assert(l_disjunction_4->left()->left() == ZERO);
+    assert(l_disjunction_4->left()->right() == ONE);
+
+    node::sink::bind(&l_result_5_nodes);
+
+    const node* l_disjunction_5 = disjoin(l_b_bar, l_c);
+
+    assert(l_result_5_nodes.size() == 1);
+
+    assert(l_disjunction_5->depth() == 1);
+    assert(l_disjunction_5->left() == ONE);
+    
+    assert(l_disjunction_5->right()->depth() == 2);
+    assert(l_disjunction_5->right()->left() == ZERO);
+    assert(l_disjunction_5->right()->right() == ONE);
     
 }
 
