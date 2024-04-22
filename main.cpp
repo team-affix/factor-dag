@@ -511,6 +511,26 @@ void test_literal_join(
     
 }
 
+void test_demorgans(
+
+)
+{
+    std::set<node> l_nodes;
+
+    node::sink::bind(&l_nodes);
+
+    const node* l_a = literal(0, true);
+    const node* l_b = literal(1, true);
+    const node* l_c_bar = literal(2, false);
+
+    const node* l_nor = invert(disjoin(l_a, l_b));
+
+    const node* l_and_of_inversions = conjoin(invert(l_a), invert(l_b));
+
+    assert(l_and_of_inversions == l_nor);
+    
+}
+
 // void test_literal_sign(
 
 // )
@@ -810,6 +830,7 @@ void unit_test_main(
     TEST(test_literal);
     TEST(test_literal_invert);
     TEST(test_literal_join);
+    TEST(test_demorgans);
     // TEST(test_literal_index);
     // TEST(test_literal_sign);
     // TEST(test_literal_covers);
