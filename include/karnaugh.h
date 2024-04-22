@@ -286,8 +286,8 @@ namespace karnaugh
     }
 
     inline const node* invert(
-        const node* a_node,
-        std::map<const node*, const node*>& a_cache
+        std::map<const node*, const node*>& a_cache,
+        const node* a_node
     )
     {
         if (a_node == ZERO)
@@ -302,8 +302,8 @@ namespace karnaugh
             a_node,
             node::sink::emplace(
                 a_node->depth(),
-                invert(a_node->left(), a_cache),
-                invert(a_node->right(), a_cache)
+                invert(a_cache, a_node->left()),
+                invert(a_cache, a_node->right())
             )
         );
 
@@ -317,27 +317,29 @@ namespace karnaugh
         std::map<const node*, const node*> l_cache;
 
         /// Call the overload, supplying the cache.
-        return invert(a_node, l_cache);
+        return invert(l_cache, a_node);
         
     }
 
-    inline const node* disjoin(
+    inline const node* join(
+        std::map<std::set<const node*>, const node*>& a_cache,
+        const node* a_ident,
+        const node* a_antident,
         const node* a_x,
-        const node* a_y,
-        std::map<std::set<const node*>, const node*>& a_cache
+        const node* a_y
     )
     {
         /// If either operand is a zero,
         ///     return the opposite operand.
-        if (a_x == ZERO)
+        if (a_x == a_ident)
             return a_y;
-        if (a_y == ZERO)
+        if (a_y == a_ident)
             return a_x;
 
         /// If either operand is 1, just
         ///     return 1.
-        if (a_x == ONE || a_y == ONE)
-            return ONE;
+        if (a_x == a_antident || a_y == a_antident)
+            return a_antident;
 
         /// We need to make variable the
         ///     nodes that we will recur on,
@@ -371,8 +373,8 @@ namespace karnaugh
             l_key,
             node::sink::emplace(
                 std::min(a_x->depth(), a_y->depth()),
-                disjoin(l_x_left, l_y_left, a_cache),
-                disjoin(l_x_right, l_y_right, a_cache)
+                join(a_cache, a_ident, a_antident, l_x_left, l_y_left),
+                join(a_cache, a_ident, a_antident, l_x_right, l_y_right)
             )
         );
 
@@ -387,7 +389,20 @@ namespace karnaugh
         std::map<std::set<const node*>, const node*> l_cache;
 
         /// Call the overload, supplying the cache.
-        return disjoin(a_x, a_y, l_cache);
+        return join(l_cache, ZERO, ONE, a_x, a_y);
+        
+    }
+
+    inline const node* conjoin(
+        const node* a_x,
+        const node* a_y
+    )
+    {
+        /// Construct the function cache.
+        std::map<std::set<const node*>, const node*> l_cache;
+
+        /// Call the overload, supplying the cache.
+        return join(l_cache, ONE, ZERO, a_x, a_y);
         
     }
     
