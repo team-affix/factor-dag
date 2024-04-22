@@ -11,6 +11,12 @@
 #include <functional>
 #include <stack>
 
+#define ONE (const node*)-1
+#define ZERO (const node*)nullptr
+
+#define CACHE(cache, key, value) \
+    (cache.contains(key) ? cache[key] : cache[key] = value)
+
 namespace karnaugh
 {
 
@@ -117,44 +123,44 @@ namespace karnaugh
 
     typedef std::vector<bool> input;
 
-    typedef uint32_t literal;
+    // typedef uint32_t literal;
 
-    inline uint32_t index(
-        literal a_literal
-    )
-    {
-        return a_literal >> 1;
-    }
+    // inline uint32_t index(
+    //     literal a_literal
+    // )
+    // {
+    //     return a_literal >> 1;
+    // }
     
-    inline bool sign(
-        literal a_literal
-    )
-    {
-        return a_literal % 2;
-    }
+    // inline bool sign(
+    //     literal a_literal
+    // )
+    // {
+    //     return a_literal % 2;
+    // }
 
-    inline bool covers(
-        literal a_literal,
-        const input& a_input
-    )
-    {
-        return a_input.at(index(a_literal)) == sign(a_literal);
-    }
+    // inline bool covers(
+    //     literal a_literal,
+    //     const input& a_input
+    // )
+    // {
+    //     return a_input.at(index(a_literal)) == sign(a_literal);
+    // }
 
-    inline std::set<literal> make_literals(
-        const int a_variable_count
-    )
-    {
-        std::set<literal> l_result;
+    // inline std::set<literal> make_literals(
+    //     const int a_variable_count
+    // )
+    // {
+    //     std::set<literal> l_result;
 
-        const int l_literal_count = 2 * a_variable_count;
+    //     const int l_literal_count = 2 * a_variable_count;
 
-        for (int i = 0; i < l_literal_count; i++)
-            l_result.insert(i);
+    //     for (int i = 0; i < l_literal_count; i++)
+    //         l_result.insert(i);
 
-        return l_result;
+    //     return l_result;
         
-    }
+    // }
 
     #pragma endregion
 
@@ -163,205 +169,205 @@ namespace karnaugh
     ////////////////////////////////////////////
     #pragma region MODELING
 
-    struct tree
+    struct node
     {
-        std::map<literal, tree> m_realized_subtrees;
+        const node* m_left_child;
+        const node* m_right_child;
 
-        bool operator()(
-            const input& a_input
+        bool operator<(
+            const node& a_other
         ) const
         {
-            /// Base case of recursion.
-            ///     We reached a leaf node
-            ///     that has been fully realized.
-            if (m_realized_subtrees.size() == 0)
-                return true;
+            if (m_left_child != a_other.m_left_child)
+                return m_left_child < a_other.m_left_child;
 
-            /////////////////////////////////////////////////////
-            /////// RECURSIVE CALL TO ALL COVERING PATHS ////////
-            /////////////////////////////////////////////////////
+            if (m_right_child != a_other.m_right_child)
+                return m_right_child < a_other.m_right_child;
 
-            return std::any_of(
-                m_realized_subtrees.begin(),
-                m_realized_subtrees.end(),
-                [&a_input](
-                    const auto& a_entry
-                )
-                {
-                    const literal& l_literal = a_entry.first;
-                    const tree& l_tree = a_entry.second;
-                    return covers(l_literal, a_input) && l_tree(a_input);
-                }
-            );
-
-        }
-
-        friend std::ostream& operator<<(
-            std::ostream& a_ostream,
-            const tree& a_tree
-        )
-        {
-            if (a_tree.m_realized_subtrees.size() == 0)
-                return a_ostream;
-
-            bool l_add_separator = false;
-
-            for (const auto& [l_literal, l_subtree] : a_tree.m_realized_subtrees)
-            {
-                if (l_add_separator)
-                    a_ostream << "+";
-
-                if (l_subtree.m_realized_subtrees.size() > 0)
-                    /// NOT a leaf node
-                    a_ostream << l_literal << "(" << l_subtree << ")";
-                else
-                    /// IS a leaf node
-                    a_ostream << l_literal;
-
-                l_add_separator = true;
-                
-            }
-
-            return a_ostream;
-
+            return false;
+            
         }
         
     };
 
-    inline tree generalize(
-        const std::set<literal>& a_remaining_literals,
-        const std::set<const input*>& a_zeroes,
-        const std::set<const input*>& a_ones
-    )
+    class global_node_sink
     {
-        tree l_result;
+        static std::set<node>* s_nodes;
 
-        /// Base case of recursion.
-        if (a_zeroes.size() == 0 ||
-            a_ones.size() == 0)
-            return l_result;
-        
-        /////////////////////////////////////////////////////
-        /// 1. Group each zero into subsets,
-        ///      defined by coverage by a literal.
-        /////////////////////////////////////////////////////
-        
-        std::map<literal, std::set<const input*>> l_zero_cover =
-            cover(
-                a_zeroes,
-                [&a_remaining_literals](
-                    const input* a_zero
-                )
-                {
-                    return karnaugh::filter(
-                        a_remaining_literals,
-                        [a_zero](
-                            literal a_literal
-                        )
-                        {
-                            return covers(a_literal, *a_zero);
-                        }
-                    );
-                }
-            );
-        
-        //////////////////////////////////////////////////////
-        /// 2. Sort literals in ascending dissatisfying cov. size.
-        //////////////////////////////////////////////////////
-        
-        /// Key type is std::pair<size_t, literal> because we
-        ///     can populate size_t with dissatisfying cov size.
-        ///     This will ensure the set is sorted by minimum
-        ///     dissatisfying coverage.
-        std::set<std::pair<size_t, literal>> l_sorted_literals;
-
-        for (const literal l_literal : a_remaining_literals)
-            l_sorted_literals.emplace(l_zero_cover[l_literal].size(), l_literal);
-
-        //////////////////////////////////////////////////////
-        /// 3. Partition the ones based on the literal
-        ///     that has minimum dissatisfying coverage 
-        ///     that simultaneously covers it.
-        //////////////////////////////////////////////////////
-
-        std::map<literal, std::set<const input*>> l_one_partition =
-            partition(
-                a_ones,
-                [&l_sorted_literals](
-                    const input* a_input
-                )
-                {
-                    auto l_first_covering_literal =
-                        std::find_if(
-                            l_sorted_literals.begin(),
-                            l_sorted_literals.end(),
-                            [a_input](
-                                const auto& a_entry
-                            )
-                            {
-                                return covers(a_entry.second, *a_input);
-                            }
-                        );
-
-                    return l_first_covering_literal->second;
-                    
-                }
-            );
-
-        /////////////////////////////////////////////////////
-        /// 4. Realize ALL subtrees.
-        /////////////////////////////////////////////////////
-
-        #pragma region REALIZE SUBTREES
-
-        for (const auto& [l_literal, l_one_block] : l_one_partition)
+    public:
+        static const node* commit(
+            node&& a_node
+        )
         {
-            /// Filter all remaining literals based on
-            ///     literal that is being taken care of
-            ///     by this edge to the subtree.
-            std::set<literal> l_subtree_remaining_literals =
-                filter(
-                    a_remaining_literals,
-                    [l_literal](
-                        literal a_literal
-                    )
-                    {
-                        return index(a_literal) != index(l_literal);
-                    }
-                );
-
-            l_result.m_realized_subtrees.emplace(
-                l_literal,
-                generalize(
-                    l_subtree_remaining_literals,
-                    l_zero_cover[l_literal],
-                    l_one_block
-                )
-            );
-
+            /// This insertion will contract
+            ///     any identical expressions.
+            return &*s_nodes->insert(
+                a_node
+            ).first;
         }
 
-        #pragma endregion
+        static std::set<node>* bind(
+            std::set<node>* a_nodes
+        )
+        {
+            /// Save the previously bound node sink
+            std::set<node>* l_result = s_nodes;
+
+            /// Bind to the new node sink
+            s_nodes = a_nodes;
+
+            /// Return the node sink that was unbound.
+            return l_result;
+            
+        }
+        
+    };
+
+    inline const node* literal(
+        uint32_t a_variable_index,
+        bool a_sign
+    )
+    {
+        if (a_variable_index == 0)
+        {
+            /// Base case for recursion. Just construct
+            ///     the node with an edge in the signed direction.
+            return global_node_sink::commit(
+                node
+                {
+                    .m_left_child = !a_sign ? ONE : ZERO,
+                    .m_right_child = a_sign ? ONE : ZERO
+                }
+            );
+        }
+
+        /// Make the recursive call. The resulting 
+        ///     node will have BOTH children point
+        ///     to the single result child.
+        const node* l_result_child =
+            literal(a_variable_index - 1, a_sign);
+
+        /// Construct the result node and return it.
+        return global_node_sink::commit(
+            node
+            {
+                .m_left_child = l_result_child,
+                .m_right_child = l_result_child
+            }
+        );
+        
+    }
+
+    inline const node* invert(
+        const node* a_node,
+        std::map<const node*, const node*>& a_cache
+    )
+    {
+        /// Invert the simple cases.
+        if (a_node == ZERO)
+            return ONE;
+
+        if (a_node == ONE)
+            return ZERO;
+
+        /// Query the cache and if it is not
+        ///     found, store the computed result.
+        return CACHE(
+            a_cache,
+            a_node,
+            global_node_sink::commit(
+                node
+                {
+                    .m_left_child = invert(a_node->m_left_child, a_cache),
+                    .m_right_child = invert(a_node->m_right_child, a_cache)
+                }
+            )
+        );
+
+    }
+
+    inline const node* invert(
+        const node* a_node
+    )
+    {
+        /// Construct the function cache.
+        std::map<const node*, const node*> l_cache;
+
+        /// Call the overload, supplying the cache.
+        return invert(a_node, l_cache);
+        
+    }
+
+    inline const node* disjoin(
+        const node* a_x,
+        const node* a_y,
+        std::map<std::set<const node*>, const node*>& a_cache
+    )
+    {
+        /// Check simple cases.
+        if (a_x == ZERO)
+            return a_y;
+
+        if (a_y == ZERO)
+            return a_x;
+
+        if (a_x == ONE || a_y == ONE)
+            return ONE;
+
+        // /// Perform a lookup in the cache
+        // ///    and if not found, do recursion.
+        // const node* l_result = CACHE(
+        //     a_cache,
+        //     std::set({a_x, a_y}),
+        //     global_node_sink::commit(
+        //         node
+        //         {
+        //             .m_left_child = disjoin(a_x->m_left_child, a_y->m_left_child, a_cache),
+        //             .m_right_child = disjoin(a_x->m_right_child, a_y->m_right_child, a_cache)
+        //         }
+        //     )
+        // );
+
+        const node* l_result_left =
+            CACHE(
+                a_cache,
+                std::set({a_x->m_left_child, a_y->m_left_child}),
+                disjoin(a_x->m_left_child, a_y->m_left_child, a_cache)
+            );
+        
+        const node* l_result_right =
+            CACHE(
+                a_cache,
+                std::set({a_x->m_right_child, a_y->m_right_child}),
+                disjoin(a_x->m_right_child, a_y->m_right_child, a_cache)
+            );
+
+        /// Last-minute simplification. If BOTH children
+        ///     of the disjunction are 1, return 1.
+        ///     this simplification must require that both
+        ///     children are antident, since if only one
+        ///     was antident, we would care to preserve the
+        ///     full details of the tree.
+        if (l_result_left == ONE && l_result_right == ONE)
+            return ONE;
 
         return l_result;
 
     }
 
-    inline tree generalize(
-        const std::set<input>& a_zeroes,
-        const std::set<input>& a_ones
+    inline const node* disjoin(
+        const node* a_x,
+        const node* a_y
     )
     {
-        const size_t l_num_vars = a_zeroes.begin()->size();
+        /// Construct the function cache.
+        std::map<std::set<const node*>, const node*> l_cache;
 
-        return generalize(
-            make_literals(l_num_vars),
-            pointers(a_zeroes),
-            pointers(a_ones)
-        );
+        /// Call the overload, supplying the cache.
+        return disjoin(a_x, a_y, l_cache);
         
     }
-
+    
     #pragma endregion
     
 }

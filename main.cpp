@@ -153,288 +153,525 @@ void test_utils_partition(
 
 }
 
-void test_literal_sign(
+void test_cache_macro(
 
 )
 {
-    assert(sign(literal(0)) == 0);
-    assert(sign(literal(1)) == 1);
-    assert(sign(literal(2)) == 0);
-    assert(sign(literal(3)) == 1);
-    assert(sign(literal(47)) == 1);
-    assert(sign(literal(48)) == 0);
+    std::map<int, double> l_cache =
+    {
+        {0, 1.0},
+        {2, 5.0},
+        {3, 9.1},
+        {5, 0.767},
+    };
+
+    assert(CACHE(l_cache, 0, -1.0) == 1.0);
+    assert(l_cache.size() == 4);
+    
+    assert(CACHE(l_cache, 1, -2.0) == -2.0);
+    assert(l_cache.size() == 5);
+
+    assert(CACHE(l_cache, 2, -3.0) == 5.0);
+    assert(l_cache.size() == 5);
+
+    assert(CACHE(l_cache, 3, -4.0) == 9.1);
+    assert(l_cache.size() == 5);
+
+    assert(CACHE(l_cache, 4, -5.0) == -5.0);
+    assert(l_cache.size() == 6);
+
+    assert(CACHE(l_cache, 5, -6.0) == 0.767);
+    assert(l_cache.size() == 6);
+
 }
 
-void test_literal_index(
+void test_node_contraction(
 
 )
 {
-    assert(index(literal(0)) == 0);
-    assert(index(literal(1)) == 0);
-    assert(index(literal(2)) == 1);
-    assert(index(literal(3)) == 1);
-    assert(index(literal(47)) == 23);
-    assert(index(literal(48)) == 24);
+    std::set<node> l_nodes;
+
+    l_nodes.emplace(node { .m_left_child = ZERO, .m_right_child = ZERO });
+
+    assert(l_nodes.size() == 1);
+    
+    l_nodes.emplace(node { .m_left_child = ZERO, .m_right_child = ONE });
+
+    /// The above nodes are different, therefore
+    ///     we do not expect them to contract.
+    assert(l_nodes.size() == 2);
+
+    l_nodes.emplace(node { .m_left_child = ONE, .m_right_child = ZERO });
+    
+    assert(l_nodes.size() == 3);
+
+    l_nodes.emplace(node { .m_left_child = ZERO, .m_right_child = ZERO });
+
+    /// Now, we expect the nodes to contract.
+    assert(l_nodes.size() == 3);
+
+    l_nodes.emplace(node { .m_left_child = ZERO, .m_right_child = ONE });
+
+    /// We expect the nodes to contract.
+    assert(l_nodes.size() == 3);
+
+    l_nodes.emplace(node { .m_left_child = ONE, .m_right_child = ZERO });
+
+    /// We expect the nodes to contract.
+    assert(l_nodes.size() == 3);
+
+    l_nodes.emplace(node { .m_left_child = ONE, .m_right_child = ONE });
+
+    /// We DO NOT expect the nodes to contract.
+    assert(l_nodes.size() == 4);
+
 }
 
-void test_literal_covers(
+void test_global_node_sink(
 
 )
 {
-    input l_input = { 0, 1, 1, 0, 1, 0 };
+    std::set<node> l_nodes;
 
-    assert(covers(literal(0), l_input) == true);
-    assert(covers(literal(1), l_input) == false);
-    assert(covers(literal(2), l_input) == false);
-    assert(covers(literal(3), l_input) == true);
-    assert(covers(literal(4), l_input) == false);
-    assert(covers(literal(5), l_input) == true);
-    assert(covers(literal(6), l_input) == true);
-    assert(covers(literal(7), l_input) == false);
-    assert(covers(literal(8), l_input) == false);
-    assert(covers(literal(9), l_input) == true);
-    assert(covers(literal(10), l_input) == true);
-    assert(covers(literal(11), l_input) == false);
+    /// Start off bound to nullptr.
+    global_node_sink::bind(nullptr);
+    
+    /// The return value of bind is the PREVIOUSLY bound
+    ///     node sink.
+    assert(global_node_sink::bind(&l_nodes) == nullptr);
+
+    assert(global_node_sink::commit(node{ZERO, ZERO}) == &*l_nodes.begin());
+
+    assert(l_nodes.size() == 1);
+
+    /// Insert an equivalent quantity. This should contract
+    ///     with what was already inside the set.
+    assert(global_node_sink::commit(node{ZERO, ZERO}) != nullptr);
+
+    assert(l_nodes.size() == 1);
+    
+    assert(global_node_sink::commit(node{ZERO, ONE}) != nullptr);
+
+    assert(l_nodes.size() == 2);
+
+    assert(global_node_sink::bind(nullptr) == &l_nodes);
+
+    assert(l_nodes.size() == 2);
     
 }
 
-void test_make_literals(
+void test_literal(
 
 )
 {
-    constexpr size_t VAR_COUNT = 10;
+    std::set<node> l_a_bar_nodes;
+    std::set<node> l_a_nodes;
+    std::set<node> l_b_bar_nodes;
+
+    /// Bind the GNS.
+    global_node_sink::bind(&l_a_bar_nodes);
+
+    /// Construct the literal a'.
+    const node* l_a_bar = literal(0, false);
+
+    assert(l_a_bar_nodes.size() == 1);
+
+    /// Since A is the first variable,
+    ///     we can interrogate the source
+    ///     vertex as it is the A node.
+    assert(l_a_bar->m_left_child == ONE);
+    assert(l_a_bar->m_right_child == ZERO);
     
-    std::set<literal> l_literals = make_literals(VAR_COUNT);
+    /// Bind to a new set, since we are
+    ///     beginning to build a new DAG.
+    global_node_sink::bind(&l_a_nodes);
+    
+    const node* l_a = literal(0, true);
 
-    /// The number of literals generated should
-    ///     always be twice the number of variables.
-    assert(l_literals.size() == 2 * VAR_COUNT);
+    assert(l_a_nodes.size() == 1);
 
-    /// Ensure that all expected literals exist
-    ///     within the resultant set.
-    for (literal i = 0; i < l_literals.size(); i++)
-        assert(l_literals.contains(i));
+    assert(l_a->m_left_child == ZERO);
+    assert(l_a->m_right_child == ONE);
+
+    /// Once again, bind to new set.
+    ///     building a new DAG for b'.
+    global_node_sink::bind(&l_b_bar_nodes);
+
+    const node* l_b_bar = literal(1, false);
+    
+    assert(l_b_bar_nodes.size() == 2);
+
+    /// Make sure that both A subchildren are pointing
+    ///     to the same location.
+    assert(l_b_bar->m_left_child == l_b_bar->m_right_child);
+
+    // Ensure that the B node only has a negative edge.
+    assert(l_b_bar->m_left_child->m_left_child == ONE);
+    assert(l_b_bar->m_left_child->m_right_child == ZERO);
     
 }
 
-void test_small_generalization_0(
+void test_literal_invert(
 
 )
 {
-    constexpr bool ENABLE_DEBUG_LOGS = false;
+    std::set<node> l_input_nodes;
+    std::set<node> l_result_nodes;
     
-    std::set<input> l_zeroes =
-    {
-        { 0, 1, 1 },
-        { 0, 1, 0 },
-        { 0, 0, 0 }
-    };
+    /// Bind to input node sink.
+    global_node_sink::bind(&l_input_nodes);
 
-    std::set<input> l_ones =
-    {
-        { 1, 1, 1 },
-        { 1, 0, 1 },
-        { 0, 0, 1 }
-    };
-    
-    tree l_tree = generalize(
-        l_zeroes,
-        l_ones
-    );
+    /// Construct two input literals.
+    const node* l_a = literal(0, true);
+    const node* l_b_bar = literal(1, false);
 
-    assert(l_tree({0, 0, 0}) == false);
-    assert(l_tree({0, 0, 1}) == true);
-    assert(l_tree({0, 1, 0}) == false);
-    assert(l_tree({0, 1, 1}) == false);
-    assert(l_tree({1, 0, 0}) == true);
-    assert(l_tree({1, 0, 1}) == true);
-    assert(l_tree({1, 1, 0}) == true);
-    assert(l_tree({1, 1, 1}) == true);
+    /// Bind to output node sink.
+    global_node_sink::bind(&l_result_nodes);
 
-    LOG(l_tree << std::endl);
+    const node* l_a_bar = invert(l_a);
 
-    std::stringstream l_ss;
+    assert(l_a_bar->m_left_child == ONE);
+    assert(l_a_bar->m_right_child == ZERO);
 
-    l_ss << l_tree;
+    const node* l_b = invert(l_b_bar);
 
-    assert(l_ss.str() == "1+2(5)");
+    assert(l_b->m_left_child == l_b->m_right_child);
+
+    assert(l_b->m_left_child->m_left_child == ZERO);
+    assert(l_b->m_left_child->m_right_child == ONE);
     
 }
 
-void test_small_generalization_1(
+void test_literal_disjoin(
 
 )
 {
-    constexpr bool ENABLE_DEBUG_LOGS = false;
+    std::set<node> l_input_nodes;
+    std::set<node> l_result_0_nodes;
+    std::set<node> l_result_1_nodes;
+    std::set<node> l_result_2_nodes;
+
+    global_node_sink::bind(&l_input_nodes);
+
+    const node* l_a_bar = literal(0, false);
+    const node* l_a = literal(0, true);
+    const node* l_b_bar = literal(1, false);
+    const node* l_b = literal(1, true);
+
+    global_node_sink::bind(&l_result_0_nodes);
+
+    /// Disjoin two opposite quantities.
+    const node* l_disjunction_0 = disjoin(l_a_bar, l_a);
+
+    assert(l_result_0_nodes.size() == 1);
+
+    assert(l_disjunction_0 == ONE);
+
+    global_node_sink::bind(&l_result_1_nodes);
+
+    /// Disjoin two independent quantities.
+    const node* l_disjunction_1 = disjoin(l_a_bar, l_b_bar);
     
-    std::set<input> l_zeroes =
-    {
-        {0, 1, 0, 0},
-        {0, 0, 0, 1},
-        {0, 1, 0, 1},
-        {0, 1, 1, 1},
-        {0, 0, 1, 0},
-        {0, 1, 1, 0}
-    };
+    assert(l_result_1_nodes.size() == 1);
 
-    std::set<input> l_ones =
-    {
-        {1, 0, 0, 0},
-        {1, 1, 0, 1},
-        {1, 0, 0, 1},
-        {1, 0, 1, 1},
-        {1, 1, 1, 0},
-        {1, 0, 1, 0}
-    };
+    assert(l_disjunction_1->m_left_child == ONE);
+    assert(l_disjunction_1->m_right_child->m_left_child == ONE);
+    assert(l_disjunction_1->m_right_child->m_right_child == ZERO);
 
-    tree l_tree = generalize(
-        l_zeroes,
-        l_ones
-    );
+    global_node_sink::bind(&l_result_2_nodes);
 
-    assert(l_tree({0, 0, 0, 0}) == false);
-    assert(l_tree({0, 0, 0, 1}) == false);
-    assert(l_tree({0, 0, 1, 0}) == false);
-    assert(l_tree({0, 0, 1, 1}) == false);
-    assert(l_tree({0, 1, 0, 0}) == false);
-    assert(l_tree({0, 1, 0, 1}) == false);
-    assert(l_tree({0, 1, 1, 0}) == false);
-    assert(l_tree({0, 1, 1, 1}) == false);
-
-    assert(l_tree({1, 0, 0, 0}) == true);
-    assert(l_tree({1, 0, 0, 1}) == true);
-    assert(l_tree({1, 0, 1, 0}) == true);
-    assert(l_tree({1, 0, 1, 1}) == true);
-    assert(l_tree({1, 1, 0, 0}) == true);
-    assert(l_tree({1, 1, 0, 1}) == true);
-    assert(l_tree({1, 1, 1, 0}) == true);
-    assert(l_tree({1, 1, 1, 1}) == true);
+    const node* l_disjunction_2 = disjoin(l_a_bar, l_b);
     
-    LOG(l_tree << std::endl);
+    assert(l_result_2_nodes.size() == 1);
 
-    std::stringstream l_ss;
-
-    l_ss << l_tree;
-
-    assert(l_ss.str() == "1");
+    assert(l_disjunction_2->m_left_child == ONE);
+    assert(l_disjunction_2->m_right_child->m_left_child == ZERO);
+    assert(l_disjunction_2->m_right_child->m_right_child == ONE);
     
 }
 
-void test_small_generalization_2(
+// void test_literal_sign(
 
-)
-{
-    constexpr bool ENABLE_DEBUG_LOGS = false;
+// )
+// {
+//     assert(sign(literal(0)) == 0);
+//     assert(sign(literal(1)) == 1);
+//     assert(sign(literal(2)) == 0);
+//     assert(sign(literal(3)) == 1);
+//     assert(sign(literal(47)) == 1);
+//     assert(sign(literal(48)) == 0);
+// }
+
+// void test_literal_index(
+
+// )
+// {
+//     assert(index(literal(0)) == 0);
+//     assert(index(literal(1)) == 0);
+//     assert(index(literal(2)) == 1);
+//     assert(index(literal(3)) == 1);
+//     assert(index(literal(47)) == 23);
+//     assert(index(literal(48)) == 24);
+// }
+
+// void test_literal_covers(
+
+// )
+// {
+//     input l_input = { 0, 1, 1, 0, 1, 0 };
+
+//     assert(covers(literal(0), l_input) == true);
+//     assert(covers(literal(1), l_input) == false);
+//     assert(covers(literal(2), l_input) == false);
+//     assert(covers(literal(3), l_input) == true);
+//     assert(covers(literal(4), l_input) == false);
+//     assert(covers(literal(5), l_input) == true);
+//     assert(covers(literal(6), l_input) == true);
+//     assert(covers(literal(7), l_input) == false);
+//     assert(covers(literal(8), l_input) == false);
+//     assert(covers(literal(9), l_input) == true);
+//     assert(covers(literal(10), l_input) == true);
+//     assert(covers(literal(11), l_input) == false);
     
-    std::set<input> l_zeroes =
-    {
-        {0, 0, 0, 0},
-        {0, 0, 0, 1},
-        {0, 1, 0, 1},
-        {0, 1, 1, 1},
-        {0, 1, 1, 0},
-        {1, 1, 1, 1},
-    };
+// }
 
-    std::set<input> l_ones =
-    {
-        {0, 0, 1, 1},
-        {0, 1, 0, 0},
-        {1, 1, 0, 1},
-        {1, 1, 1, 0},
-        {1, 0, 0, 1},
-        {1, 0, 1, 1},
-        {1, 0, 1, 0},
-    };
+// void test_make_literals(
 
-    tree l_tree = generalize(
-        l_zeroes,
-        l_ones
-    );
-
-    assert(l_tree({0, 0, 0, 0}) == false);
-    assert(l_tree({0, 0, 0, 1}) == false);
-    assert(l_tree({0, 0, 1, 0}) == true); // Unknown
-    assert(l_tree({0, 0, 1, 1}) == true);
-    assert(l_tree({0, 1, 0, 0}) == true);
-    assert(l_tree({0, 1, 0, 1}) == false);
-    assert(l_tree({0, 1, 1, 0}) == false);
-    assert(l_tree({0, 1, 1, 1}) == false);
-
-    assert(l_tree({1, 0, 0, 0}) == true); // Unknown
-    assert(l_tree({1, 0, 0, 1}) == true);
-    assert(l_tree({1, 0, 1, 0}) == true);
-    assert(l_tree({1, 0, 1, 1}) == true);
-    assert(l_tree({1, 1, 0, 0}) == true); // Unknown
-    assert(l_tree({1, 1, 0, 1}) == true);
-    assert(l_tree({1, 1, 1, 0}) == true);
-    assert(l_tree({1, 1, 1, 1}) == false);
+// )
+// {
+//     constexpr size_t VAR_COUNT = 10;
     
-    LOG(l_tree << std::endl);
+//     std::set<literal> l_literals = make_literals(VAR_COUNT);
 
-    std::stringstream l_ss;
+//     /// The number of literals generated should
+//     ///     always be twice the number of variables.
+//     assert(l_literals.size() == 2 * VAR_COUNT);
 
-    l_ss << l_tree;
-
-    assert(l_ss.str() == "1(2+4+6)+2(5)+6(3(4))");
+//     /// Ensure that all expected literals exist
+//     ///     within the resultant set.
+//     for (literal i = 0; i < l_literals.size(); i++)
+//         assert(l_literals.contains(i));
     
-}
+// }
 
-void test_small_generalization_3(
+// void test_small_generalization_0(
 
-)
-{
-    constexpr bool ENABLE_DEBUG_LOGS = false;
-
-    std::set<input> l_zeroes =
-    {
-        {0, 1, 1, 0},
-        {1, 1, 0, 0},
-        {1, 0, 0, 0},
-        {1, 0, 0, 1},
-        {1, 0, 1, 0},
-    };
-
-    std::set<input> l_ones =
-    {
-        {0, 0, 0, 0},
-        {0, 1, 0, 0},
-        {1, 1, 1, 1},
-        {1, 0, 1, 1},
-    };
-
-    tree l_tree = generalize(
-        l_zeroes,
-        l_ones
-    );
-
-    assert(l_tree({0, 0, 0, 0}) == true);
-    assert(l_tree({0, 0, 0, 1}) == true); // Unknown
-    assert(l_tree({0, 0, 1, 0}) == true); // Unknown
-    assert(l_tree({0, 0, 1, 1}) == true); // Unknown
-    assert(l_tree({0, 1, 0, 0}) == true);
-    assert(l_tree({0, 1, 0, 1}) == true); // Unknown
-    assert(l_tree({0, 1, 1, 0}) == false);
-    assert(l_tree({0, 1, 1, 1}) == true); // Unknown
-
-    assert(l_tree({1, 0, 0, 0}) == false);
-    assert(l_tree({1, 0, 0, 1}) == false);
-    assert(l_tree({1, 0, 1, 0}) == false);
-    assert(l_tree({1, 0, 1, 1}) == true);
-    assert(l_tree({1, 1, 0, 0}) == false);
-    assert(l_tree({1, 1, 0, 1}) == true);  // Unknown
-    assert(l_tree({1, 1, 1, 0}) == false); // Unknown
-    assert(l_tree({1, 1, 1, 1}) == true);
-
-    LOG(l_tree << std::endl);
-
-    std::stringstream l_ss;
-
-    l_ss << l_tree;
-
-    assert(l_ss.str() == "0(2+4)+7(3+5)");
+// )
+// {
+//     constexpr bool ENABLE_DEBUG_LOGS = false;
     
-}
+//     std::set<input> l_zeroes =
+//     {
+//         { 0, 1, 1 },
+//         { 0, 1, 0 },
+//         { 0, 0, 0 }
+//     };
+
+//     std::set<input> l_ones =
+//     {
+//         { 1, 1, 1 },
+//         { 1, 0, 1 },
+//         { 0, 0, 1 }
+//     };
+    
+//     tree l_tree = generalize(
+//         l_zeroes,
+//         l_ones
+//     );
+
+//     assert(l_tree({0, 0, 0}) == false);
+//     assert(l_tree({0, 0, 1}) == true);
+//     assert(l_tree({0, 1, 0}) == false);
+//     assert(l_tree({0, 1, 1}) == false);
+//     assert(l_tree({1, 0, 0}) == true);
+//     assert(l_tree({1, 0, 1}) == true);
+//     assert(l_tree({1, 1, 0}) == true);
+//     assert(l_tree({1, 1, 1}) == true);
+
+//     LOG(l_tree << std::endl);
+
+//     std::stringstream l_ss;
+
+//     l_ss << l_tree;
+
+//     assert(l_ss.str() == "1+2(5)");
+    
+// }
+
+// void test_small_generalization_1(
+
+// )
+// {
+//     constexpr bool ENABLE_DEBUG_LOGS = false;
+    
+//     std::set<input> l_zeroes =
+//     {
+//         {0, 1, 0, 0},
+//         {0, 0, 0, 1},
+//         {0, 1, 0, 1},
+//         {0, 1, 1, 1},
+//         {0, 0, 1, 0},
+//         {0, 1, 1, 0}
+//     };
+
+//     std::set<input> l_ones =
+//     {
+//         {1, 0, 0, 0},
+//         {1, 1, 0, 1},
+//         {1, 0, 0, 1},
+//         {1, 0, 1, 1},
+//         {1, 1, 1, 0},
+//         {1, 0, 1, 0}
+//     };
+
+//     tree l_tree = generalize(
+//         l_zeroes,
+//         l_ones
+//     );
+
+//     assert(l_tree({0, 0, 0, 0}) == false);
+//     assert(l_tree({0, 0, 0, 1}) == false);
+//     assert(l_tree({0, 0, 1, 0}) == false);
+//     assert(l_tree({0, 0, 1, 1}) == false);
+//     assert(l_tree({0, 1, 0, 0}) == false);
+//     assert(l_tree({0, 1, 0, 1}) == false);
+//     assert(l_tree({0, 1, 1, 0}) == false);
+//     assert(l_tree({0, 1, 1, 1}) == false);
+
+//     assert(l_tree({1, 0, 0, 0}) == true);
+//     assert(l_tree({1, 0, 0, 1}) == true);
+//     assert(l_tree({1, 0, 1, 0}) == true);
+//     assert(l_tree({1, 0, 1, 1}) == true);
+//     assert(l_tree({1, 1, 0, 0}) == true);
+//     assert(l_tree({1, 1, 0, 1}) == true);
+//     assert(l_tree({1, 1, 1, 0}) == true);
+//     assert(l_tree({1, 1, 1, 1}) == true);
+    
+//     LOG(l_tree << std::endl);
+
+//     std::stringstream l_ss;
+
+//     l_ss << l_tree;
+
+//     assert(l_ss.str() == "1");
+    
+// }
+
+// void test_small_generalization_2(
+
+// )
+// {
+//     constexpr bool ENABLE_DEBUG_LOGS = false;
+    
+//     std::set<input> l_zeroes =
+//     {
+//         {0, 0, 0, 0},
+//         {0, 0, 0, 1},
+//         {0, 1, 0, 1},
+//         {0, 1, 1, 1},
+//         {0, 1, 1, 0},
+//         {1, 1, 1, 1},
+//     };
+
+//     std::set<input> l_ones =
+//     {
+//         {0, 0, 1, 1},
+//         {0, 1, 0, 0},
+//         {1, 1, 0, 1},
+//         {1, 1, 1, 0},
+//         {1, 0, 0, 1},
+//         {1, 0, 1, 1},
+//         {1, 0, 1, 0},
+//     };
+
+//     tree l_tree = generalize(
+//         l_zeroes,
+//         l_ones
+//     );
+
+//     assert(l_tree({0, 0, 0, 0}) == false);
+//     assert(l_tree({0, 0, 0, 1}) == false);
+//     assert(l_tree({0, 0, 1, 0}) == true); // Unknown
+//     assert(l_tree({0, 0, 1, 1}) == true);
+//     assert(l_tree({0, 1, 0, 0}) == true);
+//     assert(l_tree({0, 1, 0, 1}) == false);
+//     assert(l_tree({0, 1, 1, 0}) == false);
+//     assert(l_tree({0, 1, 1, 1}) == false);
+
+//     assert(l_tree({1, 0, 0, 0}) == true); // Unknown
+//     assert(l_tree({1, 0, 0, 1}) == true);
+//     assert(l_tree({1, 0, 1, 0}) == true);
+//     assert(l_tree({1, 0, 1, 1}) == true);
+//     assert(l_tree({1, 1, 0, 0}) == true); // Unknown
+//     assert(l_tree({1, 1, 0, 1}) == true);
+//     assert(l_tree({1, 1, 1, 0}) == true);
+//     assert(l_tree({1, 1, 1, 1}) == false);
+    
+//     LOG(l_tree << std::endl);
+
+//     std::stringstream l_ss;
+
+//     l_ss << l_tree;
+
+//     assert(l_ss.str() == "1(2+4+6)+2(5)+6(3(4))");
+    
+// }
+
+// void test_small_generalization_3(
+
+// )
+// {
+//     constexpr bool ENABLE_DEBUG_LOGS = false;
+
+//     std::set<input> l_zeroes =
+//     {
+//         {0, 1, 1, 0},
+//         {1, 1, 0, 0},
+//         {1, 0, 0, 0},
+//         {1, 0, 0, 1},
+//         {1, 0, 1, 0},
+//     };
+
+//     std::set<input> l_ones =
+//     {
+//         {0, 0, 0, 0},
+//         {0, 1, 0, 0},
+//         {1, 1, 1, 1},
+//         {1, 0, 1, 1},
+//     };
+
+//     tree l_tree = generalize(
+//         l_zeroes,
+//         l_ones
+//     );
+
+//     assert(l_tree({0, 0, 0, 0}) == true);
+//     assert(l_tree({0, 0, 0, 1}) == true); // Unknown
+//     assert(l_tree({0, 0, 1, 0}) == true); // Unknown
+//     assert(l_tree({0, 0, 1, 1}) == true); // Unknown
+//     assert(l_tree({0, 1, 0, 0}) == true);
+//     assert(l_tree({0, 1, 0, 1}) == true); // Unknown
+//     assert(l_tree({0, 1, 1, 0}) == false);
+//     assert(l_tree({0, 1, 1, 1}) == true); // Unknown
+
+//     assert(l_tree({1, 0, 0, 0}) == false);
+//     assert(l_tree({1, 0, 0, 1}) == false);
+//     assert(l_tree({1, 0, 1, 0}) == false);
+//     assert(l_tree({1, 0, 1, 1}) == true);
+//     assert(l_tree({1, 1, 0, 0}) == false);
+//     assert(l_tree({1, 1, 0, 1}) == true);  // Unknown
+//     assert(l_tree({1, 1, 1, 0}) == false); // Unknown
+//     assert(l_tree({1, 1, 1, 1}) == true);
+
+//     LOG(l_tree << std::endl);
+
+//     std::stringstream l_ss;
+
+//     l_ss << l_tree;
+
+//     assert(l_ss.str() == "0(2+4)+7(3+5)");
+    
+// }
 
 void unit_test_main(
 
@@ -446,50 +683,28 @@ void unit_test_main(
     TEST(test_utils_filter);
     TEST(test_utils_cover);
     TEST(test_utils_partition);
-    TEST(test_literal_index);
-    TEST(test_literal_sign);
-    TEST(test_literal_covers);
-    TEST(test_make_literals);
-    TEST(test_small_generalization_0);
-    TEST(test_small_generalization_1);
-    TEST(test_small_generalization_2);
-    TEST(test_small_generalization_3);
+    TEST(test_cache_macro);
+    TEST(test_node_contraction);
+    TEST(test_global_node_sink);
+    TEST(test_literal);
+    TEST(test_literal_invert);
+    TEST(test_literal_disjoin);
+    // TEST(test_literal_index);
+    // TEST(test_literal_sign);
+    // TEST(test_literal_covers);
+    // TEST(test_make_literals);
+    // TEST(test_small_generalization_0);
+    // TEST(test_small_generalization_1);
+    // TEST(test_small_generalization_2);
+    // TEST(test_small_generalization_3);
     
 }
 
-#pragma endregion
-
-void example_fn(
-
-)
-{
-    std::set<input> l_zeroes
-    {
-        {0, 1, 1, 0, 0},
-        {1, 0, 0, 1, 1},
-    };
-
-    std::set<input> l_ones
-    {
-        {1, 1, 1, 1, 1},
-        {1, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0},
-        {1, 0, 0, 1, 0},
-    };
-
-    tree l_tree = generalize(
-        l_zeroes,
-        l_ones
-    );
-
-    std::cout << l_tree << std::endl;
-    
-}
+// #pragma endregion
 
 int main(
 
 )
 {
     unit_test_main();
-    example_fn();
 }
