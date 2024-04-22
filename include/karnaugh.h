@@ -380,7 +380,9 @@ namespace karnaugh
 
     }
 
-    inline const node* disjoin(
+    inline const node* join(
+        const node* a_ident,
+        const node* a_antident,
         const node* a_x,
         const node* a_y
     )
@@ -389,8 +391,17 @@ namespace karnaugh
         std::map<std::set<const node*>, const node*> l_cache;
 
         /// Call the overload, supplying the cache.
-        return join(l_cache, ZERO, ONE, a_x, a_y);
-        
+        return join(l_cache, a_ident, a_antident, a_x, a_y);
+
+    }
+
+    inline const node* disjoin(
+        const node* a_x,
+        const node* a_y
+    )
+    {
+        /// Call the overload, supplying the cache.
+        return join(ZERO, ONE, a_x, a_y);
     }
 
     inline const node* conjoin(
@@ -398,12 +409,8 @@ namespace karnaugh
         const node* a_y
     )
     {
-        /// Construct the function cache.
-        std::map<std::set<const node*>, const node*> l_cache;
-
         /// Call the overload, supplying the cache.
-        return join(l_cache, ONE, ZERO, a_x, a_y);
-        
+        return join(ONE, ZERO, a_x, a_y);
     }
     
     #pragma endregion

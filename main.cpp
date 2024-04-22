@@ -355,7 +355,7 @@ void test_literal_invert(
     
 }
 
-void test_literal_disjoin(
+void test_literal_join(
 
 )
 {
@@ -388,6 +388,13 @@ void test_literal_disjoin(
 
     assert(l_disjunction_0 == ONE);
 
+    const node* l_conjunction_0 = conjoin(l_a_bar, l_a);
+
+    assert(l_result_0_nodes.size() == 0);
+
+    /// Conjunction of opposites is zero.
+    assert(l_conjunction_0 == ZERO);
+
     node::sink::bind(&l_result_1_nodes);
 
     /// Disjoin two independent quantities.
@@ -402,6 +409,18 @@ void test_literal_disjoin(
     assert(l_disjunction_1->right()->left() == ONE);
     assert(l_disjunction_1->right()->right() == ZERO);
 
+    /// Conjoin the independent quantities.
+    const node* l_conjunction_1 = conjoin(l_a_bar, l_b_bar);
+
+    assert(l_result_1_nodes.size() == 2);
+
+    assert(l_conjunction_1->depth() == 0);
+    assert(l_conjunction_1->right() == ZERO);
+    
+    assert(l_conjunction_1->left()->depth() == 1);
+    assert(l_conjunction_1->left()->left() == ONE);
+    assert(l_conjunction_1->left()->right() == ZERO);
+
     node::sink::bind(&l_result_2_nodes);
 
     const node* l_disjunction_2 = disjoin(l_b, l_a_bar);
@@ -414,6 +433,17 @@ void test_literal_disjoin(
     assert(l_disjunction_2->right()->depth() == 1);
     assert(l_disjunction_2->right()->left() == ZERO);
     assert(l_disjunction_2->right()->right() == ONE);
+
+    const node* l_conjunction_2 = conjoin(l_b, l_a_bar);
+
+    assert(l_result_2_nodes.size() == 2);
+
+    assert(l_conjunction_2->depth() == 0);
+    assert(l_conjunction_2->right() == ZERO);
+
+    assert(l_conjunction_2->left()->depth() == 1);
+    assert(l_conjunction_2->left()->left() == ZERO);
+    assert(l_conjunction_2->left()->right() == ONE);
     
     node::sink::bind(&l_result_3_nodes);
 
@@ -423,6 +453,13 @@ void test_literal_disjoin(
     assert(l_disjunction_3->depth() == 0);
     assert(l_disjunction_3->left() == ZERO);
     assert(l_disjunction_3->right() == ONE);
+
+    /// Test conjunction with self.
+    const node* l_conjunction_3 = conjoin(l_a, l_a);
+
+    assert(l_conjunction_3->depth() == 0);
+    assert(l_conjunction_3->left() == ZERO);
+    assert(l_conjunction_3->right() == ONE);
 
     node::sink::bind(&l_result_4_nodes);
 
@@ -437,6 +474,17 @@ void test_literal_disjoin(
     assert(l_disjunction_4->left()->left() == ZERO);
     assert(l_disjunction_4->left()->right() == ONE);
 
+    const node* l_conjunction_4 = conjoin(l_a, l_c);
+
+    assert(l_result_4_nodes.size() == 2);
+
+    assert(l_conjunction_4->depth() == 0);
+    assert(l_conjunction_4->left() == ZERO);
+    
+    assert(l_conjunction_4->right()->depth() == 2);
+    assert(l_conjunction_4->right()->left() == ZERO);
+    assert(l_conjunction_4->right()->right() == ONE);
+
     node::sink::bind(&l_result_5_nodes);
 
     const node* l_disjunction_5 = disjoin(l_b_bar, l_c);
@@ -449,6 +497,17 @@ void test_literal_disjoin(
     assert(l_disjunction_5->right()->depth() == 2);
     assert(l_disjunction_5->right()->left() == ZERO);
     assert(l_disjunction_5->right()->right() == ONE);
+
+    const node* l_conjunction_5 = conjoin(l_b_bar, l_c);
+
+    assert(l_result_5_nodes.size() == 2);
+
+    assert(l_conjunction_5->depth() == 1);
+    assert(l_conjunction_5->right() == ZERO);
+
+    assert(l_conjunction_5->left()->depth() == 2);
+    assert(l_conjunction_5->left()->left() == ZERO);
+    assert(l_conjunction_5->left()->right() == ONE);
     
 }
 
@@ -750,7 +809,7 @@ void unit_test_main(
     TEST(test_global_node_sink);
     TEST(test_literal);
     TEST(test_literal_invert);
-    TEST(test_literal_disjoin);
+    TEST(test_literal_join);
     // TEST(test_literal_index);
     // TEST(test_literal_sign);
     // TEST(test_literal_covers);
