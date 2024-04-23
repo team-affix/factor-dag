@@ -277,21 +277,29 @@ namespace karnaugh
         const node* a_node
     )
     {
+        /// Do not print base cases.
         if (a_node == ZERO || a_node == ONE)
             return a_ostream;
 
+        /// Only print bounding parens if BOTH children
+        ///     are non-zero quantities.
         if (a_node->left() != ZERO && a_node->right() != ZERO)
             a_ostream << "(";
 
+        /// Negative case. Print an apostrophe to indicate.
         if (a_node->left() != ZERO)
             a_ostream << a_node->depth() << "'" << a_node->left();
 
+        /// Only print disjunction if BOTH children
+        ///     are non-zero quantities.
         if (a_node->left() != ZERO && a_node->right() != ZERO)
             a_ostream << "+";
 
+        /// Positive case. Omit apostrophe to indicate.
         if (a_node->right() != ZERO)
             a_ostream << a_node->depth() << a_node->right();
 
+        /// Closing paren.
         if (a_node->left() != ZERO && a_node->right() != ZERO)
             a_ostream << ")";
         
