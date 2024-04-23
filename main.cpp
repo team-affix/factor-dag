@@ -534,6 +534,40 @@ void test_demorgans(
 
 }
 
+void test_composite_function_logic(
+
+)
+{
+    std::set<node> l_nodes;
+
+    node::sink::bind(&l_nodes);
+
+    const node* l_a = literal(0, true);
+    const node* l_b = literal(1, true);
+    const node* l_c = literal(2, true);
+    const node* l_d = literal(3, true);
+    const node* l_e = literal(4, true);
+
+    std::stringstream l_ss;
+
+    l_ss << disjoin(l_a, conjoin(l_b, l_c, l_d), l_e);
+
+    assert(l_ss.str() == "(0'(1'4+1(2'4+2(3'4+3)))+0)");
+
+    l_ss.str("");
+
+    l_ss << conjoin(l_a, l_b, l_c, disjoin(l_d, l_e));
+
+    assert(l_ss.str() == "012(3'4+3)");
+
+    l_ss.str("");
+
+    l_ss << conjoin(l_a, invert(l_b), l_c, invert(conjoin(l_a, l_b)));
+
+    assert(l_ss.str() == "01'2");
+
+}
+
 // void test_literal_sign(
 
 // )
@@ -834,6 +868,7 @@ void unit_test_main(
     TEST(test_literal_invert);
     TEST(test_literal_join);
     TEST(test_demorgans);
+    TEST(test_composite_function_logic);
     // TEST(test_literal_index);
     // TEST(test_literal_sign);
     // TEST(test_literal_covers);

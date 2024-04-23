@@ -272,6 +272,33 @@ namespace karnaugh
         
     };
 
+    inline std::ostream& operator<<(
+        std::ostream& a_ostream,
+        const node* a_node
+    )
+    {
+        if (a_node == ZERO || a_node == ONE)
+            return a_ostream;
+
+        if (a_node->left() != ZERO && a_node->right() != ZERO)
+            a_ostream << "(";
+
+        if (a_node->left() != ZERO)
+            a_ostream << a_node->depth() << "'" << a_node->left();
+
+        if (a_node->left() != ZERO && a_node->right() != ZERO)
+            a_ostream << "+";
+
+        if (a_node->right() != ZERO)
+            a_ostream << a_node->depth() << a_node->right();
+
+        if (a_node->left() != ZERO && a_node->right() != ZERO)
+            a_ostream << ")";
+        
+        return a_ostream;
+        
+    }
+
     inline const node* literal(
         uint32_t a_variable_index,
         bool a_sign
@@ -384,33 +411,41 @@ namespace karnaugh
         const node* a_ident,
         const node* a_antident,
         const node* a_x,
-        const node* a_y
+        const node* a_y,
+        auto ... a_remaining_operands
     )
     {
         /// Construct the function cache.
         std::map<std::set<const node*>, const node*> l_cache;
 
         /// Call the overload, supplying the cache.
-        return join(l_cache, a_ident, a_antident, a_x, a_y);
+        const node* l_junction = join(l_cache, a_ident, a_antident, a_x, a_y);
 
+        if constexpr (sizeof...(a_remaining_operands) > 0)
+            return join(a_ident, a_antident, l_junction, a_remaining_operands...);
+        else
+            return l_junction;
+        
     }
 
     inline const node* disjoin(
         const node* a_x,
-        const node* a_y
+        const node* a_y,
+        auto ... a_remaining_operands
     )
     {
         /// Call the overload, supplying the cache.
-        return join(ZERO, ONE, a_x, a_y);
+        return join(ZERO, ONE, a_x, a_y, a_remaining_operands...);
     }
 
     inline const node* conjoin(
         const node* a_x,
-        const node* a_y
+        const node* a_y,
+        auto ... a_remaining_operands
     )
     {
         /// Call the overload, supplying the cache.
-        return join(ONE, ZERO, a_x, a_y);
+        return join(ONE, ZERO, a_x, a_y, a_remaining_operands...);
     }
     
     #pragma endregion
