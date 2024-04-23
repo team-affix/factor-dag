@@ -521,14 +521,17 @@ void test_demorgans(
 
     const node* l_a = literal(0, true);
     const node* l_b = literal(1, true);
-    const node* l_c_bar = literal(2, false);
 
     const node* l_nor = invert(disjoin(l_a, l_b));
-
     const node* l_and_of_inversions = conjoin(invert(l_a), invert(l_b));
 
     assert(l_and_of_inversions == l_nor);
     
+    const node* l_nand = invert(conjoin(l_a, l_b));
+    const node* l_or_of_inversions = disjoin(invert(l_a), invert(l_b));
+
+    assert(l_nand == l_or_of_inversions);
+
 }
 
 // void test_literal_sign(
