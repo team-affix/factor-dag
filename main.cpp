@@ -103,6 +103,8 @@ void test_node_ostream_inserter(
     
 }
 
+
+
 void test_cache_macro(
 
 )
@@ -183,7 +185,7 @@ void test_node_contraction(
 
 }
 
-void test_global_node_sink(
+void test_global_node_sink_bind(
 
 )
 {
@@ -196,8 +198,20 @@ void test_global_node_sink(
     ///     node sink.
     assert(global_node_sink::bind(&l_nodes) == nullptr);
 
+    assert(global_node_sink::bind(nullptr) == &l_nodes);
+    
+}
+
+void test_global_node_sink_emplace(
+
+)
+{
+    std::set<node> l_nodes;
+    
+    global_node_sink::bind(&l_nodes);
+    
     /// Here, we are testing the simplification
-    ///     done by node::sink.
+    ///     done by global node sink.
     assert(global_node_sink::emplace(0, ZERO, ZERO) == ZERO);
     assert(l_nodes.size() == 0);
     assert(global_node_sink::emplace(0, ONE, ONE) == ONE);
@@ -218,10 +232,17 @@ void test_global_node_sink(
 
     assert(l_nodes.size() == 2);
 
-    assert(global_node_sink::bind(nullptr) == &l_nodes);
+    /// Ensure that this node does not contract with others.
+    assert(global_node_sink::emplace(1, ONE, ZERO) != nullptr);
 
-    assert(l_nodes.size() == 2);
-    
+    assert(l_nodes.size() == 3);
+
+    /// Test simplification of emplace given different node depths.
+    assert(global_node_sink::emplace(2, ZERO, ZERO) == ZERO);
+    assert(l_nodes.size() == 3);
+    assert(global_node_sink::emplace(3, ZERO, ZERO) == ZERO);
+    assert(l_nodes.size() == 3);
+
 }
 
 void test_literal(
@@ -274,38 +295,25 @@ void test_literal(
     
 }
 
-void test_literal_invert(
+void test_dag_logic_padding(
 
 )
 {
-    std::set<node> l_input_nodes;
-    std::set<node> l_result_nodes;
-    
-    /// Bind to input node sink.
-    global_node_sink::bind(&l_input_nodes);
+    std::set<node> l_nodes;
 
-    /// Construct two input literals.
-    const node* l_a = literal(0, true);
-    const node* l_b_bar = literal(1, false);
+    global_node_sink::bind(&l_nodes);
 
-    /// Bind to output node sink.
-    global_node_sink::bind(&l_result_nodes);
+    assert(padding<const node*>(false) == ZERO);
 
-    const node* l_a_bar = invert(l_a);
+    assert(l_nodes.size() == 0);
 
-    assert(l_a_bar->depth() == 0);
-    assert(l_a_bar->negative() == ONE);
-    assert(l_a_bar->positive() == ZERO);
+    assert(padding<const node*>(true) == ONE);
 
-    const node* l_b = invert(l_b_bar);
-
-    assert(l_b->depth() == 1);
-    assert(l_b->negative() == ZERO);
-    assert(l_b->positive() == ONE);
+    assert(l_nodes.size() == 0);
     
 }
 
-void test_literal_join(
+void test_dag_logic_join(
 
 )
 {
@@ -461,6 +469,37 @@ void test_literal_join(
     
 }
 
+void test_dag_logic_invert(
+
+)
+{
+    std::set<node> l_input_nodes;
+    std::set<node> l_result_nodes;
+    
+    /// Bind to input node sink.
+    global_node_sink::bind(&l_input_nodes);
+
+    /// Construct two input literals.
+    const node* l_a = literal(0, true);
+    const node* l_b_bar = literal(1, false);
+
+    /// Bind to output node sink.
+    global_node_sink::bind(&l_result_nodes);
+
+    const node* l_a_bar = invert(l_a);
+
+    assert(l_a_bar->depth() == 0);
+    assert(l_a_bar->negative() == ONE);
+    assert(l_a_bar->positive() == ZERO);
+
+    const node* l_b = invert(l_b_bar);
+
+    assert(l_b->depth() == 1);
+    assert(l_b->negative() == ZERO);
+    assert(l_b->positive() == ONE);
+    
+}
+
 void test_demorgans(
 
 )
@@ -529,10 +568,12 @@ void unit_test_main(
     TEST(test_node_ostream_inserter);
     TEST(test_cache_macro);
     TEST(test_node_contraction);
-    TEST(test_global_node_sink);
+    TEST(test_global_node_sink_bind);
+    TEST(test_global_node_sink_emplace);
     TEST(test_literal);
-    TEST(test_literal_invert);
-    TEST(test_literal_join);
+    TEST(test_dag_logic_padding);
+    TEST(test_dag_logic_invert);
+    TEST(test_dag_logic_join);
     TEST(test_demorgans);
     TEST(test_composite_function_logic);
     

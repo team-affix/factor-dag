@@ -14,11 +14,20 @@
 #include "dag.h"
 #include "../digital-logic/include/logic.h"
 
+/// This macro function defines
+///     getting a value from cache if key contained,
+///     otherwise, computing value and caching it.
 #define CACHE(cache, key, value) \
     (cache.contains(key) ? cache[key] : cache[key] = value)
 
 namespace dag
 {
+
+    ////////////////////////////////////////////
+    ////// FACTOR-DAG SPECIFIC FUNCTIONS ///////
+    ////////////////////////////////////////////
+    #pragma region USER-SPECIALIZED DAG LOGIC
+
     class global_node_sink
     {
         static std::set<dag::node>* s_factors;
@@ -58,6 +67,19 @@ namespace dag
         }
         
     };
+
+    inline const dag::node* literal(
+        uint32_t a_variable_index,
+        bool a_sign
+    )
+    {
+        return
+            global_node_sink::emplace(
+                a_variable_index,
+                !a_sign ? ONE : ZERO,
+                a_sign ? ONE : ZERO
+            );
+    }
 
     inline const dag::node* join(
         std::map<std::set<const dag::node*>, const dag::node*>& a_cache,
@@ -142,18 +164,7 @@ namespace dag
 
     }
 
-    inline const dag::node* literal(
-        uint32_t a_variable_index,
-        bool a_sign
-    )
-    {
-        return
-            global_node_sink::emplace(
-                a_variable_index,
-                !a_sign ? ONE : ZERO,
-                a_sign ? ONE : ZERO
-            );
-    }
+    #pragma endregion
 
 }
 
