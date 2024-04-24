@@ -10,7 +10,7 @@
     void_fn(); \
     LOG("TEST COMPLETED: " << #void_fn << std::endl);
 
-using namespace karnaugh;
+using namespace factorize;
 
 ////////////////////////////////////////////
 //////////////// UNIT TESTS ////////////////
