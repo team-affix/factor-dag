@@ -240,35 +240,35 @@ void test_global_node_sink(
     std::set<node> l_nodes;
 
     /// Start off bound to nullptr.
-    node::sink::bind(nullptr);
+    global_node_sink::bind(nullptr);
     
     /// The return value of bind is the PREVIOUSLY bound
     ///     node sink.
-    assert(node::sink::bind(&l_nodes) == nullptr);
+    assert(global_node_sink::bind(&l_nodes) == nullptr);
 
     /// Here, we are testing the simplification
     ///     done by node::sink.
-    assert(node::sink::emplace(0, ZERO, ZERO) == ZERO);
+    assert(global_node_sink::emplace(0, ZERO, ZERO) == ZERO);
     assert(l_nodes.size() == 0);
-    assert(node::sink::emplace(0, ONE, ONE) == ONE);
+    assert(global_node_sink::emplace(0, ONE, ONE) == ONE);
     assert(l_nodes.size() == 0);
 
     /// Now, insert an unsimplifiable node.
-    assert(node::sink::emplace(0, ONE, ZERO) == &*l_nodes.begin());
+    assert(global_node_sink::emplace(0, ONE, ZERO) == &*l_nodes.begin());
 
     assert(l_nodes.size() == 1);
 
     /// Insert an equivalent quantity. This should contract
     ///     with what was already inside the set.
-    assert(node::sink::emplace(0, ONE, ZERO) != nullptr);
+    assert(global_node_sink::emplace(0, ONE, ZERO) != nullptr);
 
     assert(l_nodes.size() == 1);
     
-    assert(node::sink::emplace(0, ZERO, ONE) != nullptr);
+    assert(global_node_sink::emplace(0, ZERO, ONE) != nullptr);
 
     assert(l_nodes.size() == 2);
 
-    assert(node::sink::bind(nullptr) == &l_nodes);
+    assert(global_node_sink::bind(nullptr) == &l_nodes);
 
     assert(l_nodes.size() == 2);
     
@@ -283,7 +283,7 @@ void test_literal(
     std::set<node> l_b_bar_nodes;
 
     /// Bind the GNS.
-    node::sink::bind(&l_a_bar_nodes);
+    global_node_sink::bind(&l_a_bar_nodes);
 
     /// Construct the literal a'.
     const node* l_a_bar = literal(0, false);
@@ -294,24 +294,24 @@ void test_literal(
     ///     we can interrogate the source
     ///     vertex as it is the A node.
     assert(l_a_bar->depth() == 0);
-    assert(l_a_bar->left() == ONE);
-    assert(l_a_bar->right() == ZERO);
+    assert(l_a_bar->negative() == ONE);
+    assert(l_a_bar->positive() == ZERO);
     
     /// Bind to a new set, since we are
     ///     beginning to build a new DAG.
-    node::sink::bind(&l_a_nodes);
+    global_node_sink::bind(&l_a_nodes);
     
     const node* l_a = literal(0, true);
 
     assert(l_a_nodes.size() == 1);
 
     assert(l_a->depth() == 0);
-    assert(l_a->left() == ZERO);
-    assert(l_a->right() == ONE);
+    assert(l_a->negative() == ZERO);
+    assert(l_a->positive() == ONE);
 
     /// Once again, bind to new set.
     ///     building a new DAG for b'.
-    node::sink::bind(&l_b_bar_nodes);
+    global_node_sink::bind(&l_b_bar_nodes);
 
     const node* l_b_bar = literal(1, false);
     
@@ -319,8 +319,8 @@ void test_literal(
 
     // Ensure that the B node only has a negative edge.
     assert(l_b_bar->depth() == 1);
-    assert(l_b_bar->left() == ONE);
-    assert(l_b_bar->right() == ZERO);
+    assert(l_b_bar->negative() == ONE);
+    assert(l_b_bar->positive() == ZERO);
     
 }
 
@@ -332,26 +332,26 @@ void test_literal_invert(
     std::set<node> l_result_nodes;
     
     /// Bind to input node sink.
-    node::sink::bind(&l_input_nodes);
+    global_node_sink::bind(&l_input_nodes);
 
     /// Construct two input literals.
     const node* l_a = literal(0, true);
     const node* l_b_bar = literal(1, false);
 
     /// Bind to output node sink.
-    node::sink::bind(&l_result_nodes);
+    global_node_sink::bind(&l_result_nodes);
 
     const node* l_a_bar = invert(l_a);
 
     assert(l_a_bar->depth() == 0);
-    assert(l_a_bar->left() == ONE);
-    assert(l_a_bar->right() == ZERO);
+    assert(l_a_bar->negative() == ONE);
+    assert(l_a_bar->positive() == ZERO);
 
     const node* l_b = invert(l_b_bar);
 
     assert(l_b->depth() == 1);
-    assert(l_b->left() == ZERO);
-    assert(l_b->right() == ONE);
+    assert(l_b->negative() == ZERO);
+    assert(l_b->positive() == ONE);
     
 }
 
@@ -367,7 +367,7 @@ void test_literal_join(
     std::set<node> l_result_4_nodes;
     std::set<node> l_result_5_nodes;
 
-    node::sink::bind(&l_input_nodes);
+    global_node_sink::bind(&l_input_nodes);
 
     const node* l_a_bar = literal(0, false);
     const node* l_a = literal(0, true);
@@ -376,7 +376,7 @@ void test_literal_join(
     const node* l_c_bar = literal(2, false);
     const node* l_c = literal(2, true);
 
-    node::sink::bind(&l_result_0_nodes);
+    global_node_sink::bind(&l_result_0_nodes);
 
     /// Disjoin two opposite quantities.
     const node* l_disjunction_0 = disjoin(l_a_bar, l_a);
@@ -395,7 +395,7 @@ void test_literal_join(
     /// Conjunction of opposites is zero.
     assert(l_conjunction_0 == ZERO);
 
-    node::sink::bind(&l_result_1_nodes);
+    global_node_sink::bind(&l_result_1_nodes);
 
     /// Disjoin two independent quantities.
     const node* l_disjunction_1 = disjoin(l_a_bar, l_b_bar);
@@ -403,11 +403,11 @@ void test_literal_join(
     assert(l_result_1_nodes.size() == 1);
 
     assert(l_disjunction_1->depth() == 0);
-    assert(l_disjunction_1->left() == ONE);
+    assert(l_disjunction_1->negative() == ONE);
     
-    assert(l_disjunction_1->right()->depth() == 1);
-    assert(l_disjunction_1->right()->left() == ONE);
-    assert(l_disjunction_1->right()->right() == ZERO);
+    assert(l_disjunction_1->positive()->depth() == 1);
+    assert(l_disjunction_1->positive()->negative() == ONE);
+    assert(l_disjunction_1->positive()->positive() == ZERO);
 
     /// Conjoin the independent quantities.
     const node* l_conjunction_1 = conjoin(l_a_bar, l_b_bar);
@@ -415,99 +415,99 @@ void test_literal_join(
     assert(l_result_1_nodes.size() == 2);
 
     assert(l_conjunction_1->depth() == 0);
-    assert(l_conjunction_1->right() == ZERO);
+    assert(l_conjunction_1->positive() == ZERO);
     
-    assert(l_conjunction_1->left()->depth() == 1);
-    assert(l_conjunction_1->left()->left() == ONE);
-    assert(l_conjunction_1->left()->right() == ZERO);
+    assert(l_conjunction_1->negative()->depth() == 1);
+    assert(l_conjunction_1->negative()->negative() == ONE);
+    assert(l_conjunction_1->negative()->positive() == ZERO);
 
-    node::sink::bind(&l_result_2_nodes);
+    global_node_sink::bind(&l_result_2_nodes);
 
     const node* l_disjunction_2 = disjoin(l_b, l_a_bar);
     
     assert(l_result_2_nodes.size() == 1);
 
     assert(l_disjunction_2->depth() == 0);
-    assert(l_disjunction_2->left() == ONE);
+    assert(l_disjunction_2->negative() == ONE);
 
-    assert(l_disjunction_2->right()->depth() == 1);
-    assert(l_disjunction_2->right()->left() == ZERO);
-    assert(l_disjunction_2->right()->right() == ONE);
+    assert(l_disjunction_2->positive()->depth() == 1);
+    assert(l_disjunction_2->positive()->negative() == ZERO);
+    assert(l_disjunction_2->positive()->positive() == ONE);
 
     const node* l_conjunction_2 = conjoin(l_b, l_a_bar);
 
     assert(l_result_2_nodes.size() == 2);
 
     assert(l_conjunction_2->depth() == 0);
-    assert(l_conjunction_2->right() == ZERO);
+    assert(l_conjunction_2->positive() == ZERO);
 
-    assert(l_conjunction_2->left()->depth() == 1);
-    assert(l_conjunction_2->left()->left() == ZERO);
-    assert(l_conjunction_2->left()->right() == ONE);
+    assert(l_conjunction_2->negative()->depth() == 1);
+    assert(l_conjunction_2->negative()->negative() == ZERO);
+    assert(l_conjunction_2->negative()->positive() == ONE);
     
-    node::sink::bind(&l_result_3_nodes);
+    global_node_sink::bind(&l_result_3_nodes);
 
     /// Test disjunction with self.
     const node* l_disjunction_3 = disjoin(l_a, l_a);
 
     assert(l_disjunction_3->depth() == 0);
-    assert(l_disjunction_3->left() == ZERO);
-    assert(l_disjunction_3->right() == ONE);
+    assert(l_disjunction_3->negative() == ZERO);
+    assert(l_disjunction_3->positive() == ONE);
 
     /// Test conjunction with self.
     const node* l_conjunction_3 = conjoin(l_a, l_a);
 
     assert(l_conjunction_3->depth() == 0);
-    assert(l_conjunction_3->left() == ZERO);
-    assert(l_conjunction_3->right() == ONE);
+    assert(l_conjunction_3->negative() == ZERO);
+    assert(l_conjunction_3->positive() == ONE);
 
-    node::sink::bind(&l_result_4_nodes);
+    global_node_sink::bind(&l_result_4_nodes);
 
     const node* l_disjunction_4 = disjoin(l_a, l_c);
 
     assert(l_result_4_nodes.size() == 1);
 
     assert(l_disjunction_4->depth() == 0);
-    assert(l_disjunction_4->right() == ONE);
+    assert(l_disjunction_4->positive() == ONE);
 
-    assert(l_disjunction_4->left()->depth() == 2);
-    assert(l_disjunction_4->left()->left() == ZERO);
-    assert(l_disjunction_4->left()->right() == ONE);
+    assert(l_disjunction_4->negative()->depth() == 2);
+    assert(l_disjunction_4->negative()->negative() == ZERO);
+    assert(l_disjunction_4->negative()->positive() == ONE);
 
     const node* l_conjunction_4 = conjoin(l_a, l_c);
 
     assert(l_result_4_nodes.size() == 2);
 
     assert(l_conjunction_4->depth() == 0);
-    assert(l_conjunction_4->left() == ZERO);
+    assert(l_conjunction_4->negative() == ZERO);
     
-    assert(l_conjunction_4->right()->depth() == 2);
-    assert(l_conjunction_4->right()->left() == ZERO);
-    assert(l_conjunction_4->right()->right() == ONE);
+    assert(l_conjunction_4->positive()->depth() == 2);
+    assert(l_conjunction_4->positive()->negative() == ZERO);
+    assert(l_conjunction_4->positive()->positive() == ONE);
 
-    node::sink::bind(&l_result_5_nodes);
+    global_node_sink::bind(&l_result_5_nodes);
 
     const node* l_disjunction_5 = disjoin(l_b_bar, l_c);
 
     assert(l_result_5_nodes.size() == 1);
 
     assert(l_disjunction_5->depth() == 1);
-    assert(l_disjunction_5->left() == ONE);
+    assert(l_disjunction_5->negative() == ONE);
     
-    assert(l_disjunction_5->right()->depth() == 2);
-    assert(l_disjunction_5->right()->left() == ZERO);
-    assert(l_disjunction_5->right()->right() == ONE);
+    assert(l_disjunction_5->positive()->depth() == 2);
+    assert(l_disjunction_5->positive()->negative() == ZERO);
+    assert(l_disjunction_5->positive()->positive() == ONE);
 
     const node* l_conjunction_5 = conjoin(l_b_bar, l_c);
 
     assert(l_result_5_nodes.size() == 2);
 
     assert(l_conjunction_5->depth() == 1);
-    assert(l_conjunction_5->right() == ZERO);
+    assert(l_conjunction_5->positive() == ZERO);
 
-    assert(l_conjunction_5->left()->depth() == 2);
-    assert(l_conjunction_5->left()->left() == ZERO);
-    assert(l_conjunction_5->left()->right() == ONE);
+    assert(l_conjunction_5->negative()->depth() == 2);
+    assert(l_conjunction_5->negative()->negative() == ZERO);
+    assert(l_conjunction_5->negative()->positive() == ONE);
     
 }
 
@@ -517,7 +517,7 @@ void test_demorgans(
 {
     std::set<node> l_nodes;
 
-    node::sink::bind(&l_nodes);
+    global_node_sink::bind(&l_nodes);
 
     const node* l_a = literal(0, true);
     const node* l_b = literal(1, true);
@@ -540,7 +540,7 @@ void test_composite_function_logic(
 {
     std::set<node> l_nodes;
 
-    node::sink::bind(&l_nodes);
+    global_node_sink::bind(&l_nodes);
 
     const node* l_a = literal(0, true);
     const node* l_b = literal(1, true);

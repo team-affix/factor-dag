@@ -132,12 +132,12 @@ namespace karnaugh
 
     class node
     {
-        /// Defines the depth of the node in the tree.
+        /// Defines the depth of the factor in the tree.
         uint32_t m_depth;
 
         /// Defines the subtrees.
-        const node* m_left_child;
-        const node* m_right_child;
+        const node* m_negative;
+        const node* m_positive;
 
     public:
 
@@ -147,8 +147,8 @@ namespace karnaugh
             const node* a_right_child
         ) :
             m_depth(a_depth),
-            m_left_child(a_left_child),
-            m_right_child(a_right_child)
+            m_negative(a_left_child),
+            m_positive(a_right_child)
         {
 
         }
@@ -160,18 +160,18 @@ namespace karnaugh
             return m_depth;
         }
 
-        const node* left(
+        const node* negative(
 
         ) const
         {
-            return m_left_child;
+            return m_negative;
         }
 
-        const node* right(
+        const node* positive(
 
         ) const
         {
-            return m_right_child;
+            return m_positive;
         }
 
         bool operator<(
@@ -181,56 +181,16 @@ namespace karnaugh
             if (m_depth != a_other.m_depth)
                 return m_depth < a_other.m_depth;
             
-            if (m_left_child != a_other.m_left_child)
-                return m_left_child < a_other.m_left_child;
+            if (m_negative != a_other.m_negative)
+                return m_negative < a_other.m_negative;
 
-            if (m_right_child != a_other.m_right_child)
-                return m_right_child < a_other.m_right_child;
+            if (m_positive != a_other.m_positive)
+                return m_positive < a_other.m_positive;
 
             return false;
             
         }
 
-        class sink
-        {
-            static std::set<node>* s_nodes;
-
-        public:
-            static const node* emplace(
-                uint32_t a_depth,
-                const node* a_left_child,
-                const node* a_right_child
-            )
-            {
-                /// Apply simplification to node.
-                if (a_left_child == a_right_child)
-                    return a_left_child;
-
-                /// This insertion will contract
-                ///     any identical expressions.
-                return &*s_nodes->emplace(
-                    a_depth, a_left_child, a_right_child
-                ).first;
-
-            }
-
-            static std::set<node>* bind(
-                std::set<node>* a_nodes
-            )
-            {
-                /// Save the previously bound node sink
-                std::set<node>* l_result = s_nodes;
-
-                /// Bind to the new node sink
-                s_nodes = a_nodes;
-
-                /// Return the node sink that was unbound.
-                return l_result;
-                
-            }
-            
-        };
-        
     };
 
     inline std::ostream& operator<<(
@@ -244,29 +204,69 @@ namespace karnaugh
 
         /// Only print bounding parens if BOTH children
         ///     are non-zero quantities.
-        if (a_node->left() != ZERO && a_node->right() != ZERO)
+        if (a_node->negative() != ZERO && a_node->positive() != ZERO)
             a_ostream << "(";
 
         /// Negative case. Print an apostrophe to indicate.
-        if (a_node->left() != ZERO)
-            a_ostream << a_node->depth() << "'" << a_node->left();
+        if (a_node->negative() != ZERO)
+            a_ostream << a_node->depth() << "'" << a_node->negative();
 
         /// Only print disjunction if BOTH children
         ///     are non-zero quantities.
-        if (a_node->left() != ZERO && a_node->right() != ZERO)
+        if (a_node->negative() != ZERO && a_node->positive() != ZERO)
             a_ostream << "+";
 
         /// Positive case. Omit apostrophe to indicate.
-        if (a_node->right() != ZERO)
-            a_ostream << a_node->depth() << a_node->right();
+        if (a_node->positive() != ZERO)
+            a_ostream << a_node->depth() << a_node->positive();
 
         /// Closing paren.
-        if (a_node->left() != ZERO && a_node->right() != ZERO)
+        if (a_node->negative() != ZERO && a_node->positive() != ZERO)
             a_ostream << ")";
         
         return a_ostream;
         
     }
+
+    class global_node_sink
+    {
+        static std::set<node>* s_factors;
+
+    public:
+        static const node* emplace(
+            uint32_t a_depth,
+            const node* a_left_child,
+            const node* a_right_child
+        )
+        {
+            /// Apply simplification to factor.
+            if (a_left_child == a_right_child)
+                return a_left_child;
+
+            /// This insertion will contract
+            ///     any identical expressions.
+            return &*s_factors->emplace(
+                a_depth, a_left_child, a_right_child
+            ).first;
+
+        }
+
+        static std::set<node>* bind(
+            std::set<node>* a_factors
+        )
+        {
+            /// Save the previously bound factor sink
+            std::set<node>* l_result = s_factors;
+
+            /// Bind to the new factor sink
+            s_factors = a_factors;
+
+            /// Return the factor sink that was unbound.
+            return l_result;
+            
+        }
+        
+    };
 
     inline const node* literal(
         uint32_t a_variable_index,
@@ -274,7 +274,7 @@ namespace karnaugh
     )
     {
         return
-            node::sink::emplace(
+            global_node_sink::emplace(
                 a_variable_index,
                 !a_sign ? ONE : ZERO,
                 a_sign ? ONE : ZERO
@@ -296,10 +296,10 @@ namespace karnaugh
         return CACHE(
             a_cache,
             a_node,
-            node::sink::emplace(
+            global_node_sink::emplace(
                 a_node->depth(),
-                invert(a_cache, a_node->left()),
-                invert(a_cache, a_node->right())
+                invert(a_cache, a_node->negative()),
+                invert(a_cache, a_node->positive())
             )
         );
 
@@ -341,10 +341,10 @@ namespace karnaugh
         ///     nodes that we will recur on,
         ///     due to the potential for
         ///     differing node depths.
-        const node* l_x_left = a_x->left();
-        const node* l_y_left = a_y->left();
-        const node* l_x_right = a_x->right();
-        const node* l_y_right = a_y->right();
+        const node* l_x_left = a_x->negative();
+        const node* l_y_left = a_y->negative();
+        const node* l_x_right = a_x->positive();
+        const node* l_y_right = a_y->positive();
 
         /// If the depths differ, we mustn't
         ///     traverse to the children of
@@ -367,7 +367,7 @@ namespace karnaugh
         return CACHE(
             a_cache,
             l_key,
-            node::sink::emplace(
+            global_node_sink::emplace(
                 std::min(a_x->depth(), a_y->depth()),
                 join(a_cache, a_ident, a_antident, l_x_left, l_y_left),
                 join(a_cache, a_ident, a_antident, l_x_right, l_y_right)
