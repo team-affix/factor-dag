@@ -123,45 +123,6 @@ namespace karnaugh
 
     typedef std::vector<bool> input;
 
-    // typedef uint32_t literal;
-
-    // inline uint32_t index(
-    //     literal a_literal
-    // )
-    // {
-    //     return a_literal >> 1;
-    // }
-    
-    // inline bool sign(
-    //     literal a_literal
-    // )
-    // {
-    //     return a_literal % 2;
-    // }
-
-    // inline bool covers(
-    //     literal a_literal,
-    //     const input& a_input
-    // )
-    // {
-    //     return a_input.at(index(a_literal)) == sign(a_literal);
-    // }
-
-    // inline std::set<literal> make_literals(
-    //     const int a_variable_count
-    // )
-    // {
-    //     std::set<literal> l_result;
-
-    //     const int l_literal_count = 2 * a_variable_count;
-
-    //     for (int i = 0; i < l_literal_count; i++)
-    //         l_result.insert(i);
-
-    //     return l_result;
-        
-    // }
-
     #pragma endregion
 
     ////////////////////////////////////////////
