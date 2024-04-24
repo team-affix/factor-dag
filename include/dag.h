@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <ostream>
 
-#define ONE (const node*)-1
-#define ZERO (const node*)nullptr
+#define ONE (const dag::node*)-1
+#define ZERO (const dag::node*)nullptr
 
 namespace dag
 {

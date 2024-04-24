@@ -1,0 +1,3 @@
+[submodule "digital-logic"]
+	path = digital-logic
+	url = https://github.com/team-affix/digital-logic.git
