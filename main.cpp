@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <sstream>
 
+#include "include/dag.h"
 #include "include/dag_logic.h"
 
 #define LOG(x) if (ENABLE_DEBUG_LOGS) std::cout << x;
@@ -17,6 +18,68 @@ using namespace logic;
 //////////////// UNIT TESTS ////////////////
 ////////////////////////////////////////////
 #pragma region UNIT TESTS
+
+void test_node_constructor(
+
+)
+{
+    node l_nodes[2] = {
+        {0, ZERO, ZERO},
+        {0, ONE, ONE},
+    };
+
+    constexpr uint32_t DEPTH = 13;
+    const node* NEGATIVE = &l_nodes[0];
+    const node* POSITIVE = &l_nodes[1];
+    
+    node l_node(DEPTH, NEGATIVE, POSITIVE);
+
+    assert(l_node.depth() == DEPTH);
+    assert(l_node.negative() == NEGATIVE);
+    assert(l_node.positive() == POSITIVE);
+    
+};
+
+void test_node_less_than_comparison(
+
+)
+{
+    node l_nodes[4] = {
+        {0, ZERO, ZERO},
+        {0, ZERO, ZERO},
+        {0, ZERO, ZERO},
+        {0, ZERO, ZERO}
+    };
+
+    node l_node_0(13, &l_nodes[0], &l_nodes[0]);
+    node l_node_1(13, &l_nodes[0], &l_nodes[1]);
+    node l_node_2(13, &l_nodes[1], &l_nodes[0]);
+    node l_node_3(14, &l_nodes[0], &l_nodes[0]);
+
+    assert(l_node_0 < l_node_1);
+    assert(l_node_0 < l_node_2);
+    assert(l_node_0 < l_node_3);
+
+    assert(l_node_1 < l_node_2);
+    assert(l_node_1 < l_node_3);
+
+    assert(l_node_2 < l_node_3);
+
+    assert(!(l_node_0 < l_node_0));
+
+    assert(!(l_node_1 < l_node_0));
+    assert(!(l_node_1 < l_node_1));
+
+    assert(!(l_node_2 < l_node_0));
+    assert(!(l_node_2 < l_node_1));
+    assert(!(l_node_2 < l_node_2));
+
+    assert(!(l_node_3 < l_node_0));
+    assert(!(l_node_3 < l_node_1));
+    assert(!(l_node_3 < l_node_2));
+    assert(!(l_node_3 < l_node_3));
+    
+}
 
 void test_cache_macro(
 
@@ -439,6 +502,8 @@ void unit_test_main(
 {
     constexpr bool ENABLE_DEBUG_LOGS = true;
 
+    TEST(test_node_constructor);
+    TEST(test_node_less_than_comparison);
     TEST(test_cache_macro);
     TEST(test_node_contraction);
     TEST(test_global_node_sink);
