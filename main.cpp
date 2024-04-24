@@ -81,6 +81,28 @@ void test_node_less_than_comparison(
     
 }
 
+void test_node_ostream_inserter(
+
+)
+{
+    node l_c_bar(2, ONE, ZERO);
+
+    node l_b(1, &l_c_bar, ONE);
+
+    std::stringstream l_ss;
+
+    l_ss << (const node*)&l_c_bar;
+
+    assert(l_ss.str() == "2'");
+
+    l_ss.str("");
+
+    l_ss << (const node*)&l_b;
+
+    assert(l_ss.str() == "(1'2'+1)");
+    
+}
+
 void test_cache_macro(
 
 )
@@ -504,6 +526,7 @@ void unit_test_main(
 
     TEST(test_node_constructor);
     TEST(test_node_less_than_comparison);
+    TEST(test_node_ostream_inserter);
     TEST(test_cache_macro);
     TEST(test_node_contraction);
     TEST(test_global_node_sink);
@@ -515,7 +538,7 @@ void unit_test_main(
     
 }
 
-// #pragma endregion
+#pragma endregion
 
 int main(
 
