@@ -638,6 +638,7 @@ void test_composite_function_logic(
     const node* l_c = literal(2, true);
     const node* l_d = literal(3, true);
     const node* l_e = literal(4, true);
+    const node* l_f = literal(5, true);
 
     std::stringstream l_ss;
 
@@ -656,6 +657,65 @@ void test_composite_function_logic(
     l_ss << conjoin(l_a, invert(l_b), l_c, invert(conjoin(l_a, l_b)));
 
     assert(l_ss.str() == "01'2");
+
+    l_ss.str("");
+
+    const node* l_exor_a_b =
+        exor(
+             l_a, l_b
+        );
+
+    l_ss << l_exor_a_b;
+
+    assert(l_ss.str() == "(0'1+01')");
+
+    l_ss.str("");
+
+    l_ss << exor(l_a, l_b, l_c);
+
+    assert(l_ss.str() == "(0'(1'2+12')+0(1'2'+12))");
+
+    l_ss.str("");
+
+    std::list<const node*> l_bs_0 = { l_a, l_b, l_c };
+    std::list<const node*> l_bs_1 = { l_d, l_e, l_f };
+
+    l_ss << exnor(l_bs_0, l_bs_1);
+
+    assert(l_ss.str() == "(0'(1'(2'3'4'5'+23'4'5)+1(2'3'45'+23'45))"
+                         "+0(1'(2'34'5'+234'5)+1(2'345'+2345)))"    );
+
+    l_ss.str("");
+
+
+
+
+
+    /////////////////////////////////
+    /// TEST FACTORING PROBLEMS
+    /////////////////////////////////
+
+    std::list<const node*> l_bs_2;
+    std::list<const node*> l_bs_3;
+
+    const auto l_generate_node = []
+    {
+        static int i = 0;
+
+        return literal(i++, true);
+        
+    };
+    
+    /// Generate two 6-bit strings
+    std::generate_n(std::back_inserter(l_bs_2), 6, l_generate_node);
+    std::generate_n(std::back_inserter(l_bs_3), 6, l_generate_node);
+
+    const std::list<const node*> l_desired_output = 
+        { ONE, ONE, ONE, ZERO, ONE, ONE, ZERO, ZERO, ZERO, ONE, ONE, ZERO };
+
+    l_ss << exnor(multiply(l_bs_2, l_bs_3), l_desired_output);
+
+    assert(l_ss.str() == "0(1'23'4'5678'910'11+12'34'567'89'10'11)");
 
 }
 
