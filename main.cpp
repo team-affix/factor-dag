@@ -103,8 +103,6 @@ void test_node_ostream_inserter(
     
 }
 
-
-
 void test_cache_macro(
 
 )
@@ -466,6 +464,81 @@ void test_dag_logic_join(
     assert(l_conjunction_5->negative()->depth() == 2);
     assert(l_conjunction_5->negative()->negative() == ZERO);
     assert(l_conjunction_5->negative()->positive() == ONE);
+
+    /////////////////////////////////
+    /// TEST THE CACHE FOR JUNCTION
+    /////////////////////////////////
+
+    std::set<node> l_cache_test_nodes;
+
+    global_node_sink::bind(&l_cache_test_nodes);
+
+    std::map<std::set<const node*>, const node*> l_cache;
+
+    const node* l_a_and_c_bar =
+        dag::join(
+            l_cache,
+            ONE,
+            ZERO,
+            l_a,
+            l_c_bar
+        );
+
+    /// Only one node actually enters the cache.
+    ///     three total calls to the function,
+    ///     but the second two are early returns.
+    assert(l_cache.size() == 1);
+
+    l_cache.clear();
+
+    const node* l_a_c_bar_or_b =
+        dag::join(
+            l_cache,
+            ZERO,
+            ONE,
+            l_a_and_c_bar,
+            l_b
+        );
+
+    assert(l_cache.size() == 2);
+
+    l_cache.clear();
+    
+    const node* l_a_exnor_b_and_c_bar =
+        conjoin(
+            disjoin(
+                conjoin(
+                    l_a_bar, l_b_bar
+                ),
+                conjoin(
+                    l_a, l_b
+                )
+            ),
+            l_c_bar
+        );
+
+    const node* l_a_exnor_b_and_c =
+        conjoin(
+            disjoin(
+                conjoin(
+                    l_a_bar, l_b_bar
+                ),
+                conjoin(
+                    l_a, l_b
+                )
+            ),
+            l_c
+        );
+
+    dag::join(
+        l_cache,
+        ZERO,
+        ONE,
+        l_a_exnor_b_and_c_bar,
+        l_a_exnor_b_and_c
+    );
+
+    assert(l_cache.size() == 4);
     
 }
 
@@ -480,23 +553,52 @@ void test_dag_logic_invert(
     global_node_sink::bind(&l_input_nodes);
 
     /// Construct two input literals.
+    const node* l_a_bar = literal(0, false);
     const node* l_a = literal(0, true);
     const node* l_b_bar = literal(1, false);
+    const node* l_b = literal(1, true);
+    const node* l_c_bar = literal(2, false);
+    const node* l_c = literal(2, true);
 
     /// Bind to output node sink.
     global_node_sink::bind(&l_result_nodes);
-
-    const node* l_a_bar = invert(l_a);
 
     assert(l_a_bar->depth() == 0);
     assert(l_a_bar->negative() == ONE);
     assert(l_a_bar->positive() == ZERO);
 
-    const node* l_b = invert(l_b_bar);
-
     assert(l_b->depth() == 1);
     assert(l_b->negative() == ZERO);
     assert(l_b->positive() == ONE);
+
+
+
+    /////////////////////////////////
+    /// TEST THE CACHE FOR INVERSION
+    /////////////////////////////////
+
+    std::set<node> l_cache_test_nodes;
+
+    global_node_sink::bind(&l_cache_test_nodes);
+
+    std::map<const node*, const node*> l_cache;
+
+    const node* l_a_exnor_b_and_c_bar =
+        conjoin(
+            disjoin(
+                conjoin(
+                    l_a_bar, l_b_bar
+                ),
+                conjoin(
+                    l_a, l_b
+                )
+            ),
+            l_c_bar
+        );
+
+    dag::invert(l_cache, l_a_exnor_b_and_c_bar);
+
+    assert(l_cache.size() == 4);
     
 }
 
