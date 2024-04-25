@@ -88,7 +88,7 @@ namespace dag
 
         /// Negative case. Print an apostrophe to indicate.
         if (a_node->negative() != ZERO)
-            a_ostream << a_node->depth() << "'" << a_node->negative();
+            a_ostream << "[" << a_node->depth() << "']" << a_node->negative();
 
         /// Only print disjunction if BOTH children
         ///     are non-zero quantities.
@@ -97,7 +97,7 @@ namespace dag
 
         /// Positive case. Omit apostrophe to indicate.
         if (a_node->positive() != ZERO)
-            a_ostream << a_node->depth() << a_node->positive();
+            a_ostream << "[" << a_node->depth() << "]" << a_node->positive();
 
         /// Closing paren.
         if (a_node->negative() != ZERO && a_node->positive() != ZERO)

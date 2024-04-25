@@ -93,13 +93,13 @@ void test_node_ostream_inserter(
 
     l_ss << (const node*)&l_c_bar;
 
-    assert(l_ss.str() == "2'");
+    assert(l_ss.str() == "[2']");
 
     l_ss.str("");
 
     l_ss << (const node*)&l_b;
 
-    assert(l_ss.str() == "(1'2'+1)");
+    assert(l_ss.str() == "([1'][2']+[1])");
     
 }
 
@@ -644,19 +644,19 @@ void test_composite_function_logic(
 
     l_ss << disjoin(l_a, conjoin(l_b, l_c, l_d), l_e);
 
-    assert(l_ss.str() == "(0'(1'4+1(2'4+2(3'4+3)))+0)");
+    assert(l_ss.str() == "([0']([1'][4]+[1]([2'][4]+[2]([3'][4]+[3])))+[0])");
 
     l_ss.str("");
 
     l_ss << conjoin(l_a, l_b, l_c, disjoin(l_d, l_e));
 
-    assert(l_ss.str() == "012(3'4+3)");
+    assert(l_ss.str() == "[0][1][2]([3'][4]+[3])");
 
     l_ss.str("");
 
     l_ss << conjoin(l_a, invert(l_b), l_c, invert(conjoin(l_a, l_b)));
 
-    assert(l_ss.str() == "01'2");
+    assert(l_ss.str() == "[0][1'][2]");
 
     l_ss.str("");
 
@@ -667,13 +667,13 @@ void test_composite_function_logic(
 
     l_ss << l_exor_a_b;
 
-    assert(l_ss.str() == "(0'1+01')");
+    assert(l_ss.str() == "([0'][1]+[0][1'])");
 
     l_ss.str("");
 
     l_ss << exor(l_a, l_b, l_c);
 
-    assert(l_ss.str() == "(0'(1'2+12')+0(1'2'+12))");
+    assert(l_ss.str() == "([0']([1'][2]+[1][2'])+[0]([1'][2']+[1][2]))");
 
     l_ss.str("");
 
@@ -682,8 +682,8 @@ void test_composite_function_logic(
 
     l_ss << exnor(l_bs_0, l_bs_1);
 
-    assert(l_ss.str() == "(0'(1'(2'3'4'5'+23'4'5)+1(2'3'45'+23'45))"
-                         "+0(1'(2'34'5'+234'5)+1(2'345'+2345)))"    );
+    assert(l_ss.str() == "([0']([1']([2'][3'][4'][5']+[2][3'][4'][5])+[1]([2'][3'][4][5']+[2][3'][4][5]))"
+                         "+[0]([1']([2'][3][4'][5']+[2][3][4'][5])+[1]([2'][3][4][5']+[2][3][4][5])))"    );
 
     l_ss.str("");
 
@@ -715,7 +715,7 @@ void test_composite_function_logic(
 
     l_ss << exnor(multiply(l_bs_2, l_bs_3), l_desired_output);
 
-    assert(l_ss.str() == "0(1'23'4'5678'910'11+12'34'567'89'10'11)");
+    assert(l_ss.str() == "[0]([1'][2][3'][4'][5][6][7][8'][9][10'][11]+[1][2'][3][4'][5][6][7'][8][9'][10'][11])");
 
 }
 
