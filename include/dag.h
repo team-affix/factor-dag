@@ -90,6 +90,7 @@ namespace dag
 
     };
 
+    /// These are terminal nodes in the factor DAG's.
     inline const node* ONE = reinterpret_cast<const node*>(-1);
     inline const node* ZERO = reinterpret_cast<const node*>(0);
 
