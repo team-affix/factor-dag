@@ -1,4 +1,4 @@
-#include "include/dag_logic.h"
+#include "include/dag.h"
 
 using namespace dag;
 

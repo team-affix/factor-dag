@@ -1,5 +1,5 @@
-#ifndef DAG_LOGIC_H
-#define DAG_LOGIC_H
+#ifndef DAG_H
+#define DAG_H
 
 #include <stdint.h>
 #include <utility>
