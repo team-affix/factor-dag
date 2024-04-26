@@ -13,9 +13,6 @@
 
 #include "../digital-logic/include/logic.h"
 
-#define ONE (const dag::node*)-1
-#define ZERO (const dag::node*)nullptr
-
 /// This macro function defines
 ///     getting a value from cache if key contained,
 ///     otherwise, computing value and caching it.
@@ -92,6 +89,9 @@ namespace dag
         }
 
     };
+
+    inline const node* ONE = reinterpret_cast<const node*>(-1);
+    inline const node* ZERO = reinterpret_cast<const node*>(0);
 
     inline std::ostream& operator<<(
         std::ostream& a_ostream,
@@ -281,7 +281,7 @@ namespace logic
         bool a_logic_state
     )
     {
-        return a_logic_state ? ONE : ZERO;
+        return a_logic_state ? dag::ONE : dag::ZERO;
     }
 
     template<>
@@ -296,8 +296,8 @@ namespace logic
 
         return dag::join(
             l_cache,
-            a_identity ? ONE : ZERO,
-            a_identity ? ZERO : ONE,
+            a_identity ? dag::ONE : dag::ZERO,
+            a_identity ? dag::ZERO : dag::ONE,
             a_x,
             a_y
         );
