@@ -718,6 +718,76 @@ void test_composite_function_logic(
 
 }
 
+void test_evaluate(
+
+)
+{
+    std::set<node> l_nodes;
+
+    global_node_sink::bind(&l_nodes);
+
+    const node* l_a = literal(0, true);
+    const node* l_b = literal(1, true);
+    const node* l_c = literal(2, true);
+    const node* l_d = literal(3, true);
+    const node* l_e = literal(4, true);
+    const node* l_f = literal(5, true);
+
+    const node* l_function_0 =
+        conjoin(l_a, disjoin(l_b, l_c, l_d), invert(conjoin(l_e, l_f)));
+
+    /// Brute force check, but specific hard-coded
+    ///     boundary cases are also tested after.
+    for (int i = 0; i < 64; i++)
+    {
+        bool l_bool_a = (i & (0x1 << 0)) != 0;
+        bool l_bool_b = (i & (0x1 << 1)) != 0;
+        bool l_bool_c = (i & (0x1 << 2)) != 0;
+        bool l_bool_d = (i & (0x1 << 3)) != 0;
+        bool l_bool_e = (i & (0x1 << 4)) != 0;
+        bool l_bool_f = (i & (0x1 << 5)) != 0;
+
+        bool l_desired = (l_bool_a && (l_bool_b || l_bool_c || l_bool_d) && !(l_bool_e && l_bool_f));
+
+        std::vector<bool> l_test_input = {
+            l_bool_a, l_bool_b, l_bool_c, l_bool_d, l_bool_e, l_bool_f
+        };
+
+        assert(evaluate(l_function_0, l_test_input) == l_desired);
+        
+    }
+
+    assert(evaluate(l_function_0, { 0, 1, 1, 1, 0, 0 }) == false);
+    assert(evaluate(l_function_0, { 1, 1, 1, 1, 0, 0 }) == true);
+    assert(evaluate(l_function_0, { 1, 1, 1, 1, 0, 1 }) == true);
+    assert(evaluate(l_function_0, { 1, 1, 1, 1, 1, 1 }) == false);
+    assert(evaluate(l_function_0, { 1, 1, 0, 1, 1, 0 }) == true);
+    assert(evaluate(l_function_0, { 1, 1, 0, 0, 1, 0 }) == true);
+    assert(evaluate(l_function_0, { 1, 0, 0, 0, 1, 0 }) == false);
+    assert(evaluate(l_function_0, { 0, 1, 0, 0, 1, 0 }) == false);
+
+
+
+    /// Test element-wise exnor across
+    const node* l_function_1 =
+        exnor(std::list{l_a, l_b, l_c}, std::list{l_d, l_e, l_f});
+
+    assert(evaluate(l_function_1, { 0, 0, 1, 0, 0, 1 }) == true);
+    assert(evaluate(l_function_1, { 0, 0, 0, 0, 0, 1 }) == false);
+    assert(evaluate(l_function_1, { 0, 1, 1, 1, 1, 1 }) == false);
+    assert(evaluate(l_function_1, { 0, 1, 0, 0, 1, 0 }) == true);
+    assert(evaluate(l_function_1, { 1, 0, 0, 1, 0, 1 }) == false);
+    assert(evaluate(l_function_1, { 1, 0, 0, 1, 1, 0 }) == false);
+    assert(evaluate(l_function_1, { 1, 1, 1, 1, 1, 1 }) == true);
+    assert(evaluate(l_function_1, { 0, 0, 0, 0, 0, 0 }) == true);
+    assert(evaluate(l_function_1, { 1, 1, 0, 1, 1, 0 }) == true);
+    assert(evaluate(l_function_1, { 1, 1, 0, 1, 1, 1 }) == false);
+    assert(evaluate(l_function_1, { 1, 1, 1, 1, 1, 0 }) == false);
+    assert(evaluate(l_function_1, { 1, 0, 1, 1, 1, 0 }) == false);
+    assert(evaluate(l_function_1, { 1, 0, 1, 1, 0, 1 }) == true);
+
+}
+
 void unit_test_main(
 
 )
@@ -737,6 +807,7 @@ void unit_test_main(
     TEST(test_dag_logic_join);
     TEST(test_demorgans);
     TEST(test_composite_function_logic);
+    TEST(test_evaluate);
     
 }
 

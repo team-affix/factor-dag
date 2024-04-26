@@ -265,6 +265,26 @@ namespace dag
 
     }
 
+    /// Evaluates the function represented by the
+    ///     factor DAG on the argued input.
+    inline bool evaluate(
+        const node* a_node,
+        const std::vector<bool>& a_input
+    )
+    {
+        /// Basic cases for evaluation.
+        if (a_node == ZERO)
+            return false;
+        if (a_node == ONE)
+            return true;
+
+        if (a_input[a_node->depth()])
+            return evaluate(a_node->positive(), a_input);
+        else
+            return evaluate(a_node->negative(), a_input);
+            
+    }
+
     #pragma endregion
 
 }
