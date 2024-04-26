@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <sstream>
 
-#include "include/dag.h"
 #include "include/dag_logic.h"
 
 #define LOG(x) if (ENABLE_DEBUG_LOGS) std::cout << x;
