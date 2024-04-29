@@ -92,13 +92,13 @@ void test_node_ostream_inserter(
 
     l_ss << (const node*)&l_c_bar;
 
-    assert(l_ss.str() == "[2']");
+    assert(l_ss.str() == "[2]'");
 
     l_ss.str("");
 
     l_ss << (const node*)&l_b;
 
-    assert(l_ss.str() == "([1'][2']+[1])");
+    assert(l_ss.str() == "([1]'[2]'+[1])");
     
 }
 
@@ -643,19 +643,19 @@ void test_composite_function_logic(
 
     l_ss << disjoin(l_a, conjoin(l_b, l_c, l_d), l_e);
 
-    assert(l_ss.str() == "([0']([1'][4]+[1]([2'][4]+[2]([3'][4]+[3])))+[0])");
+    assert(l_ss.str() == "([0]'([1]'[4]+[1]([2]'[4]+[2]([3]'[4]+[3])))+[0])");
 
     l_ss.str("");
 
     l_ss << conjoin(l_a, l_b, l_c, disjoin(l_d, l_e));
 
-    assert(l_ss.str() == "[0][1][2]([3'][4]+[3])");
+    assert(l_ss.str() == "[0][1][2]([3]'[4]+[3])");
 
     l_ss.str("");
 
     l_ss << conjoin(l_a, invert(l_b), l_c, invert(conjoin(l_a, l_b)));
 
-    assert(l_ss.str() == "[0][1'][2]");
+    assert(l_ss.str() == "[0][1]'[2]");
 
     l_ss.str("");
 
@@ -666,13 +666,13 @@ void test_composite_function_logic(
 
     l_ss << l_exor_a_b;
 
-    assert(l_ss.str() == "([0'][1]+[0][1'])");
+    assert(l_ss.str() == "([0]'[1]+[0][1]')");
 
     l_ss.str("");
 
     l_ss << exor(l_a, l_b, l_c);
 
-    assert(l_ss.str() == "([0']([1'][2]+[1][2'])+[0]([1'][2']+[1][2]))");
+    assert(l_ss.str() == "([0]'([1]'[2]+[1][2]')+[0]([1]'[2]'+[1][2]))");
 
     l_ss.str("");
 
@@ -681,8 +681,8 @@ void test_composite_function_logic(
 
     l_ss << exnor(l_bs_0, l_bs_1);
 
-    assert(l_ss.str() == "([0']([1']([2'][3'][4'][5']+[2][3'][4'][5])+[1]([2'][3'][4][5']+[2][3'][4][5]))"
-                         "+[0]([1']([2'][3][4'][5']+[2][3][4'][5])+[1]([2'][3][4][5']+[2][3][4][5])))"    );
+    assert(l_ss.str() == "([0]'([1]'([2]'[3]'[4]'[5]'+[2][3]'[4]'[5])+[1]([2]'[3]'[4][5]'+[2][3]'[4][5]))"
+                         "+[0]([1]'([2]'[3][4]'[5]'+[2][3][4]'[5])+[1]([2]'[3][4][5]'+[2][3][4][5])))"    );
 
     l_ss.str("");
 
@@ -714,7 +714,74 @@ void test_composite_function_logic(
 
     l_ss << exnor(multiply(l_bs_2, l_bs_3), l_desired_output);
 
-    assert(l_ss.str() == "[0]([1'][2][3'][4'][5][6][7][8'][9][10'][11]+[1][2'][3][4'][5][6][7'][8][9'][10'][11])");
+    assert(l_ss.str() == "[0]([1]'[2][3]'[4]'[5][6][7][8]'[9][10]'[11]+[1][2]'[3][4]'[5][6][7]'[8][9]'[10]'[11])");
+
+}
+
+void test_equivalent_functions(
+
+)
+{
+    std::set<node> l_nodes;
+
+    global_node_sink::bind(&l_nodes);
+
+    const node* l_a = literal(0, true);
+    const node* l_b = literal(1, true);
+    const node* l_c = literal(2, true);
+    const node* l_d = literal(3, true);
+    const node* l_e = literal(4, true);
+    const node* l_f = literal(5, true);
+
+    {
+        const node* l_model_0 =
+            disjoin(
+                conjoin(
+                    l_a,
+                    disjoin(
+                        conjoin(
+                            invert(l_b),
+                            l_c
+                        ),
+                        l_c
+                    )
+                ),
+                conjoin(
+                    l_d,
+                    l_e
+                )
+            );
+
+        const node* l_model_1 =
+            invert(
+                conjoin(
+                    disjoin(
+                        invert(l_a),
+                        invert(
+                            disjoin(
+                                conjoin(
+                                    invert(l_b),
+                                    l_c
+                                ),
+                                l_c
+                            )
+                        )
+                    ),
+                    disjoin(
+                        invert(l_d),
+                        invert(l_e)
+                    )
+                )
+            );
+
+        assert(l_model_0 == l_model_1);
+        
+    }
+
+    {
+
+    }
+
 
 }
 
@@ -807,6 +874,7 @@ void unit_test_main(
     TEST(test_dag_logic_join);
     TEST(test_demorgans);
     TEST(test_composite_function_logic);
+    TEST(test_equivalent_functions);
     TEST(test_evaluate);
     
 }

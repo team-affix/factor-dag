@@ -110,7 +110,7 @@ namespace dag
 
         /// Negative case. Print an apostrophe to indicate.
         if (a_node->negative() != ZERO)
-            a_ostream << "[" << a_node->depth() << "']" << a_node->negative();
+            a_ostream << "[" << a_node->depth() << "]'" << a_node->negative();
 
         /// Only print disjunction if BOTH children
         ///     are non-zero quantities.
@@ -127,6 +127,17 @@ namespace dag
         
         return a_ostream;
         
+    }
+
+    inline std::istream& operator>>(
+        std::istream& a_istream,
+        const node*& a_node
+    )
+    {
+        
+        
+        return a_istream;
+
     }
 
     class global_node_sink
