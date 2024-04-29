@@ -129,17 +129,6 @@ namespace dag
         
     }
 
-    inline std::istream& operator>>(
-        std::istream& a_istream,
-        const node*& a_node
-    )
-    {
-        
-        
-        return a_istream;
-
-    }
-
     class global_node_sink
     {
         static std::set<dag::node>* s_factors;
