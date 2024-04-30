@@ -8,6 +8,7 @@
 #include <set>
 #include <algorithm>
 #include <ostream>
+#include <istream>
 #include <functional>
 #include <stack>
 
@@ -94,40 +95,15 @@ namespace dag
     inline const node* ONE = reinterpret_cast<const node*>(-1);
     inline const node* ZERO = reinterpret_cast<const node*>(0);
 
-    inline std::ostream& operator<<(
+    std::ostream& operator<<(
         std::ostream& a_ostream,
         const node* a_node
-    )
-    {
-        /// Do not print base cases.
-        if (a_node == ZERO || a_node == ONE)
-            return a_ostream;
+    );
 
-        /// Only print bounding parens if BOTH children
-        ///     are non-zero quantities.
-        if (a_node->negative() != ZERO && a_node->positive() != ZERO)
-            a_ostream << "(";
-
-        /// Negative case. Print an apostrophe to indicate.
-        if (a_node->negative() != ZERO)
-            a_ostream << "[" << a_node->depth() << "]'" << a_node->negative();
-
-        /// Only print disjunction if BOTH children
-        ///     are non-zero quantities.
-        if (a_node->negative() != ZERO && a_node->positive() != ZERO)
-            a_ostream << "+";
-
-        /// Positive case. Omit apostrophe to indicate.
-        if (a_node->positive() != ZERO)
-            a_ostream << "[" << a_node->depth() << "]" << a_node->positive();
-
-        /// Closing paren.
-        if (a_node->negative() != ZERO && a_node->positive() != ZERO)
-            a_ostream << ")";
-        
-        return a_ostream;
-        
-    }
+    std::istream& operator>>(
+        std::istream& a_istream,
+        const node*& a_node
+    );
 
     class global_node_sink
     {

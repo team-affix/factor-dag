@@ -102,6 +102,430 @@ void test_node_ostream_inserter(
     
 }
 
+void test_node_istream_extractor(
+
+)
+{
+    constexpr bool ENABLE_DEBUG_LOGS = true;
+    
+    /// TEST 0
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]");
+        
+    }
+
+    /// TEST 1
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]'");
+        
+    }
+
+    /// TEST 2
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0][1]");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0][1]");
+        
+    }
+
+    /// TEST 3
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0][1]'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0][1]'");
+        
+    }
+
+    /// TEST 4
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]'[1]");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]'[1]");
+        
+    }
+
+    /// TEST 5
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]'[1]'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]'[1]'");
+        
+    }
+
+    /// TEST 6
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]'[1][2]'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]'[1][2]'");
+        
+    }
+
+    /// TEST 7
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]+[1]");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "([0]'[1]+[0])");
+        
+    }
+
+    /// TEST 8
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0]+[1]+[2]'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "([0]'([1]'[2]'+[1])+[0])");
+        
+    }
+
+    /// TEST 9
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0][1]'+([2][3])'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "([0]'([2]'+[2][3]')+[0]([1]'+[1]([2]'+[2][3]')))");
+        
+    }
+
+    /// TEST 10
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0][1]'+([2][3])'+([1][2])");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        /// This one was honestly mind-boggling. But it is correct I think.
+        assert(l_oss.str() == "([0]'([1]'([2]'+[2][3]')+[1])+[0])");
+        
+    }
+
+    /// TEST 11
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0][1]'+(([2][3])'+([1][2]))");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        /// This one was honestly mind-boggling. But it is correct I think.
+        ///     Viewing the truth table is our best bet.
+        assert(l_oss.str() == "([0]'([1]'([2]'+[2][3]')+[1])+[0])");
+        
+    }
+
+    /// TEST 12
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("[0][1]'+(([2][3])'+([1][2]))'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "([0]'[1]'[2][3]+[0][1]')");
+        
+    }
+
+    /// TEST 13
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("([0][1]')'+(([2][3])'+([1][2]))'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "([0]'+[0]([1]'[2][3]+[1]))");
+        
+    }
+
+    /// TEST 14
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("((([0])))");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]");
+        
+    }
+
+    /// TEST 15
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("((([0])))'");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0]'");
+        
+    }
+
+    /// TEST 16 (testing multiplication of multiple sets of parens)
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("([0]'[1])'([2]')");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "([0]'[1]'[2]'+[0][2]')");
+        
+    }
+
+    /// TEST 17
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("([0]'+[1])'([2]')");
+        std::stringstream l_oss;
+
+        const node* l_model;
+
+        l_iss >> l_model;
+
+        LOG(l_model << std::endl);
+
+        l_oss << l_model;
+
+        assert(l_oss.str() == "[0][1]'[2]'");
+        
+    }
+
+    /// TEST 18
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("([0]+[1]')([2]+[3])");
+        std::stringstream l_oss;
+
+        const node* l_model_0;
+
+        l_iss >> l_model_0;
+
+        const node* l_model_1 =
+            conjoin(
+                disjoin(
+                    literal(0, true),
+                    literal(1, false)
+                ),
+                disjoin(
+                    literal(2, true),
+                    literal(3, true)
+                )
+            );
+
+        assert(l_model_0 == l_model_1);
+
+    }
+
+    /// TEST 19 (Heavy weight test)
+    {
+        std::set<node> l_nodes;
+        global_node_sink::bind(&l_nodes);
+            
+        std::stringstream l_iss("([2]'(([0])[1]))([3]+[4][3]'+[5])'+(([3]+[1]'))'");
+        std::stringstream l_oss;
+
+        const node* l_model_0;
+
+        l_iss >> l_model_0;
+
+        const node* l_model_1 =
+            disjoin(
+                conjoin(
+                    conjoin(
+                        literal(2, false),
+                        literal(0, true),
+                        literal(1, true)
+                    ),
+                    invert(
+                        disjoin(
+                            literal(3, true),
+                            conjoin(
+                                literal(4, true),
+                                literal(3, false)
+                            ),
+                            literal(5, true)
+                        )
+                    )
+                ),
+                invert(
+                    disjoin(
+                        literal(3, true),
+                        literal(1, false)
+                    )
+                )
+            );
+
+        assert(l_model_0 == l_model_1);
+
+    }
+
+}
+
 void test_cache_macro(
 
 )
@@ -864,6 +1288,7 @@ void unit_test_main(
     TEST(test_node_constructor);
     TEST(test_node_less_than_comparison);
     TEST(test_node_ostream_inserter);
+    TEST(test_node_istream_extractor);
     TEST(test_cache_macro);
     TEST(test_node_contraction);
     TEST(test_global_node_sink_bind);
