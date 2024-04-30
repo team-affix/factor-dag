@@ -107,7 +107,7 @@ namespace dag
 
     class global_node_sink
     {
-        static std::set<dag::node>* s_factors;
+        static std::set<dag::node>* s_nodes;
 
     public:
         static const dag::node* emplace(
@@ -122,23 +122,23 @@ namespace dag
 
             /// This insertion will contract
             ///     any identical expressions.
-            return &*s_factors->emplace(
+            return &*s_nodes->emplace(
                 a_depth, a_left_child, a_right_child
             ).first;
 
         }
 
         static std::set<dag::node>* bind(
-            std::set<dag::node>* a_factors
+            std::set<dag::node>* a_nodes
         )
         {
             /// Save the previously bound factor sink
-            std::set<dag::node>* l_result = s_factors;
+            std::set<dag::node>* l_result = s_nodes;
 
             /// Bind to the new factor sink
-            s_factors = a_factors;
+            s_nodes = a_nodes;
 
-            /// Return the factor sink that was unbound.
+            /// Return the factor sink that was unbinded.
             return l_result;
             
         }
