@@ -1,4 +1,4 @@
-SOURCE = main.cpp factor_dag.cpp
+SOURCE = main.cpp factor.cpp
 INCLUDE = -I"./include/" -I"digital-logic/include/"
 
 all:

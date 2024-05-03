@@ -1,8 +1,8 @@
 #include <assert.h>
 
-#include "include/factor_dag.h"
+#include "include/factor.h"
 
-namespace factor_dag
+namespace factor
 {
     std::ostream& operator<<(
         std::ostream& a_ostream,

@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <sstream>
 
-#include "include/factor_dag.h"
+#include "include/factor.h"
 
 #define LOG(x) if (ENABLE_DEBUG_LOGS) std::cout << x;
 
@@ -10,7 +10,7 @@
     void_fn(); \
     LOG("TEST COMPLETED: " << #void_fn << std::endl);
 
-using namespace factor_dag;
+using namespace factor;
 using namespace logic;
 
 ////////////////////////////////////////////
@@ -479,7 +479,7 @@ void test_dag_logic_join(
     std::map<std::set<const node*>, const node*> l_cache;
 
     const node* l_a_and_c_bar =
-        factor_dag::join(
+        factor::join(
             l_cache,
             ONE,
             ZERO,
@@ -495,7 +495,7 @@ void test_dag_logic_join(
     l_cache.clear();
 
     const node* l_a_c_bar_or_b =
-        factor_dag::join(
+        factor::join(
             l_cache,
             ZERO,
             ONE,
@@ -533,7 +533,7 @@ void test_dag_logic_join(
             l_c
         );
 
-    factor_dag::join(
+    factor::join(
         l_cache,
         ZERO,
         ONE,
@@ -599,7 +599,7 @@ void test_dag_logic_invert(
             l_c_bar
         );
 
-    factor_dag::invert(l_cache, l_a_exnor_b_and_c_bar);
+    factor::invert(l_cache, l_a_exnor_b_and_c_bar);
 
     assert(l_cache.size() == 4);
     

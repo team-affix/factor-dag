@@ -1,5 +1,5 @@
-#ifndef FACTOR_DAG_H
-#define FACTOR_DAG_H
+#ifndef FACTOR_H
+#define FACTOR_H
 
 #include <stdint.h>
 #include <utility>
@@ -20,7 +20,7 @@
 #define CACHE(cache, key, value) \
     (cache.contains(key) ? cache[key] : cache[key] = value)
 
-namespace factor_dag
+namespace factor
 {
 
     ////////////////////////////////////////////
@@ -180,7 +180,7 @@ namespace factor_dag
     inline const node* ONE = reinterpret_cast<const node*>(-1);
     inline const node* ZERO = reinterpret_cast<const node*>(0);
 
-    inline const factor_dag::node* literal(
+    inline const node* literal(
         uint32_t a_variable_index,
         bool a_sign
     )
@@ -309,27 +309,27 @@ namespace logic
     #pragma region USER-SPECIALIZED DAG LOGIC
 
     template<>
-    inline const factor_dag::node* padding(
+    inline const factor::node* padding(
         bool a_logic_state
     )
     {
-        return a_logic_state ? factor_dag::ONE : factor_dag::ZERO;
+        return a_logic_state ? factor::ONE : factor::ZERO;
     }
 
     template<>
-    inline const factor_dag::node* join(
+    inline const factor::node* join(
         bool a_identity,
-        const factor_dag::node* a_x,
-        const factor_dag::node* a_y
+        const factor::node* a_x,
+        const factor::node* a_y
     )
     {
         /// Construct the function cache.
-        std::map<std::set<const factor_dag::node*>, const factor_dag::node*> l_cache;
+        std::map<std::set<const factor::node*>, const factor::node*> l_cache;
 
-        return factor_dag::join(
+        return factor::join(
             l_cache,
-            a_identity ? factor_dag::ONE : factor_dag::ZERO,
-            a_identity ? factor_dag::ZERO : factor_dag::ONE,
+            a_identity ? factor::ONE : factor::ZERO,
+            a_identity ? factor::ZERO : factor::ONE,
             a_x,
             a_y
         );
@@ -337,15 +337,15 @@ namespace logic
     }
 
     template<>
-    inline const factor_dag::node* invert(
-        const factor_dag::node* a_node
+    inline const factor::node* invert(
+        const factor::node* a_node
     )
     {
         /// Construct the function cache.
-        std::map<const factor_dag::node*, const factor_dag::node*> l_cache;
+        std::map<const factor::node*, const factor::node*> l_cache;
 
         /// Call the overload, supplying the cache.
-        return factor_dag::invert(l_cache, a_node);
+        return factor::invert(l_cache, a_node);
         
     }
 
