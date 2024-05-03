@@ -1,5 +1,5 @@
-#ifndef DAG_H
-#define DAG_H
+#ifndef FACTOR_DAG_H
+#define FACTOR_DAG_H
 
 #include <stdint.h>
 #include <utility>
@@ -20,7 +20,7 @@
 #define CACHE(cache, key, value) \
     (cache.contains(key) ? cache[key] : cache[key] = value)
 
-namespace dag
+namespace factor_dag
 {
 
     ////////////////////////////////////////////
@@ -91,10 +91,6 @@ namespace dag
 
     };
 
-    /// These are terminal nodes in the factor DAG's.
-    inline const node* ONE = reinterpret_cast<const node*>(-1);
-    inline const node* ZERO = reinterpret_cast<const node*>(0);
-
     std::ostream& operator<<(
         std::ostream& a_ostream,
         const node* a_node
@@ -105,65 +101,104 @@ namespace dag
         const node*& a_node
     );
 
-    class global_node_sink
+    struct graph
     {
-        static std::set<dag::node>* s_nodes;
-
-    public:
-        static const dag::node* emplace(
-            uint32_t a_depth,
-            const dag::node* a_left_child,
-            const dag::node* a_right_child
+        graph(
+            
         )
         {
-            /// Apply simplification to factor.
-            if (a_left_child == a_right_child)
-                return a_left_child;
-
-            /// This insertion will contract
-            ///     any identical expressions.
-            return &*s_nodes->emplace(
-                a_depth, a_left_child, a_right_child
-            ).first;
 
         }
 
-        static std::set<dag::node>* bind(
-            std::set<dag::node>* a_nodes
+        /// We disallow shallow copying the object,
+        ///     as this would cause the copied
+        ///     graph's pointers to dangle.
+        graph(
+            const graph&
+        ) = delete;
+
+        /// For the same reason as above,
+        ///     we disallow copy assignment.
+        graph& operator=(
+            const graph&
+        ) = delete;
+
+        size_t size(
+
+        ) const
+        {
+            return m_nodes.size();
+        }
+
+        const node* emplace(
+            uint32_t a_depth,
+            const node* a_negative_child,
+            const node* a_positive_child
         )
         {
-            /// Save the previously bound factor sink
-            std::set<dag::node>* l_result = s_nodes;
+            if (a_negative_child == a_positive_child)
+                /// If the children are identical, just
+                ///     perform the simplification and
+                ///     avoid emplacing anything.
+                return a_negative_child;
 
-            /// Bind to the new factor sink
-            s_nodes = a_nodes;
-
-            /// Return the factor sink that was unbinded.
-            return l_result;
+            return &*m_nodes.emplace(
+                a_depth,
+                a_negative_child,
+                a_positive_child
+            ).first;
             
+        }
+        
+    private:
+        std::set<node> m_nodes;
+
+    };
+
+    class global_node_sink
+    {
+        static graph* s_graph;
+
+    public:
+        static void bind(
+            graph* a_graph
+        )
+        {
+            s_graph = a_graph;
+        }
+
+        static graph* bound(
+
+        )
+        {
+            return s_graph;
         }
         
     };
 
-    inline const dag::node* literal(
+    /// These are terminal nodes in the factor DAG's.
+    inline const node* ONE = reinterpret_cast<const node*>(-1);
+    inline const node* ZERO = reinterpret_cast<const node*>(0);
+
+    inline const factor_dag::node* literal(
         uint32_t a_variable_index,
         bool a_sign
     )
     {
         return
-            global_node_sink::emplace(
+            global_node_sink::bound()->emplace(
                 a_variable_index,
                 !a_sign ? ONE : ZERO,
                 a_sign ? ONE : ZERO
             );
     }
 
-    inline const dag::node* join(
-        std::map<std::set<const dag::node*>, const dag::node*>& a_cache,
-        const dag::node* a_ident,
-        const dag::node* a_antident,
-        const dag::node* a_x,
-        const dag::node* a_y
+    inline const node* join(
+        std::map<std::set<const node*>, const node*>& a_cache,
+        const node* a_ident,
+        const node* a_antident,
+        const node* a_x,
+        const node* a_y
     )
     {
         /// If either operand is a zero,
@@ -182,10 +217,10 @@ namespace dag
         ///     nodes that we will recur on,
         ///     due to the potential for
         ///     differing node depths.
-        const dag::node* l_x_left = a_x->negative();
-        const dag::node* l_y_left = a_y->negative();
-        const dag::node* l_x_right = a_x->positive();
-        const dag::node* l_y_right = a_y->positive();
+        const node* l_x_left = a_x->negative();
+        const node* l_y_left = a_y->negative();
+        const node* l_x_right = a_x->positive();
+        const node* l_y_right = a_y->positive();
 
         /// If the depths differ, we mustn't
         ///     traverse to the children of
@@ -203,12 +238,12 @@ namespace dag
 
         /// Construct the cache key, which
         ///     should be the sorted pair:
-        std::set<const dag::node*> l_key = { a_x, a_y };
+        std::set<const node*> l_key = { a_x, a_y };
 
         return CACHE(
             a_cache,
             l_key,
-            global_node_sink::emplace(
+            global_node_sink::bound()->emplace(
                 std::min(a_x->depth(), a_y->depth()),
                 join(a_cache, a_ident, a_antident, l_x_left, l_y_left),
                 join(a_cache, a_ident, a_antident, l_x_right, l_y_right)
@@ -217,9 +252,9 @@ namespace dag
 
     }
 
-    inline const dag::node* invert(
-        std::map<const dag::node*, const dag::node*>& a_cache,
-        const dag::node* a_node
+    inline const node* invert(
+        std::map<const node*, const node*>& a_cache,
+        const node* a_node
     )
     {
         if (a_node == ZERO)
@@ -232,7 +267,7 @@ namespace dag
         return CACHE(
             a_cache,
             a_node,
-            global_node_sink::emplace(
+            global_node_sink::bound()->emplace(
                 a_node->depth(),
                 invert(a_cache, a_node->negative()),
                 invert(a_cache, a_node->positive())
@@ -274,27 +309,27 @@ namespace logic
     #pragma region USER-SPECIALIZED DAG LOGIC
 
     template<>
-    inline const dag::node* padding(
+    inline const factor_dag::node* padding(
         bool a_logic_state
     )
     {
-        return a_logic_state ? dag::ONE : dag::ZERO;
+        return a_logic_state ? factor_dag::ONE : factor_dag::ZERO;
     }
 
     template<>
-    inline const dag::node* join(
+    inline const factor_dag::node* join(
         bool a_identity,
-        const dag::node* a_x,
-        const dag::node* a_y
+        const factor_dag::node* a_x,
+        const factor_dag::node* a_y
     )
     {
         /// Construct the function cache.
-        std::map<std::set<const dag::node*>, const dag::node*> l_cache;
+        std::map<std::set<const factor_dag::node*>, const factor_dag::node*> l_cache;
 
-        return dag::join(
+        return factor_dag::join(
             l_cache,
-            a_identity ? dag::ONE : dag::ZERO,
-            a_identity ? dag::ZERO : dag::ONE,
+            a_identity ? factor_dag::ONE : factor_dag::ZERO,
+            a_identity ? factor_dag::ZERO : factor_dag::ONE,
             a_x,
             a_y
         );
@@ -302,15 +337,15 @@ namespace logic
     }
 
     template<>
-    inline const dag::node* invert(
-        const dag::node* a_node
+    inline const factor_dag::node* invert(
+        const factor_dag::node* a_node
     )
     {
         /// Construct the function cache.
-        std::map<const dag::node*, const dag::node*> l_cache;
+        std::map<const factor_dag::node*, const factor_dag::node*> l_cache;
 
         /// Call the overload, supplying the cache.
-        return dag::invert(l_cache, a_node);
+        return factor_dag::invert(l_cache, a_node);
         
     }
 

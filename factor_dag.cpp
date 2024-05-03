@@ -1,8 +1,8 @@
 #include <assert.h>
 
-#include "include/dag.h"
+#include "include/factor_dag.h"
 
-namespace dag
+namespace factor_dag
 {
     std::ostream& operator<<(
         std::ostream& a_ostream,
@@ -121,6 +121,6 @@ namespace dag
         
     }
 
-    std::set<dag::node>* global_node_sink::s_nodes(nullptr);
+    graph* global_node_sink::s_graph(nullptr);
 
 }
