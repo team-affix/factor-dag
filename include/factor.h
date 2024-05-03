@@ -24,9 +24,9 @@ namespace factor
 {
 
     ////////////////////////////////////////////
-    ////// FACTOR-DAG TYPES AND FUNCTIONS //////
+    ////////////// DATA STRUCTURES /////////////
     ////////////////////////////////////////////
-    #pragma region FACTOR-DAG TYPES AND FUNCTIONS
+    #pragma region DATA STRUCTURES
 
     class node
     {
@@ -101,6 +101,10 @@ namespace factor
         const node*& a_node
     );
 
+    /// These are terminal nodes in the factor DAG's.
+    inline const node* ONE = reinterpret_cast<const node*>(-1);
+    inline const node* ZERO = reinterpret_cast<const node*>(0);
+
     struct dag
     {
         dag(
@@ -155,6 +159,13 @@ namespace factor
 
     };
 
+    #pragma endregion
+
+    ////////////////////////////////////////////
+    //////////////// GLOBAL VARS ///////////////
+    ////////////////////////////////////////////
+    #pragma region GLOBAL VARS
+
     class global_node_sink
     {
         static dag* s_graph;
@@ -176,9 +187,12 @@ namespace factor
         
     };
 
-    /// These are terminal nodes in the factor DAG's.
-    inline const node* ONE = reinterpret_cast<const node*>(-1);
-    inline const node* ZERO = reinterpret_cast<const node*>(0);
+    #pragma endregion
+
+    ////////////////////////////////////////////
+    //////////////// ALGORITHMS ////////////////
+    ////////////////////////////////////////////
+    #pragma region ALGORITHMS
 
     inline const node* literal(
         uint32_t a_variable_index,
