@@ -186,7 +186,7 @@ void test_global_node_sink_bind(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
 
     /// Start off bound to nullptr.
     global_node_sink::bind(nullptr);
@@ -207,7 +207,7 @@ void test_global_node_sink_emplace(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
     
     global_node_sink::bind(&l_nodes);
     
@@ -250,9 +250,9 @@ void test_literal(
 
 )
 {
-    graph l_a_bar_nodes;
-    graph l_a_nodes;
-    graph l_b_bar_nodes;
+    dag l_a_bar_nodes;
+    dag l_a_nodes;
+    dag l_b_bar_nodes;
 
     /// Bind the GNS.
     global_node_sink::bind(&l_a_bar_nodes);
@@ -300,7 +300,7 @@ void test_dag_logic_padding(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
 
     global_node_sink::bind(&l_nodes);
 
@@ -318,13 +318,13 @@ void test_dag_logic_join(
 
 )
 {
-    graph l_input_nodes;
-    graph l_result_0_nodes;
-    graph l_result_1_nodes;
-    graph l_result_2_nodes;
-    graph l_result_3_nodes;
-    graph l_result_4_nodes;
-    graph l_result_5_nodes;
+    dag l_input_nodes;
+    dag l_result_0_nodes;
+    dag l_result_1_nodes;
+    dag l_result_2_nodes;
+    dag l_result_3_nodes;
+    dag l_result_4_nodes;
+    dag l_result_5_nodes;
 
     global_node_sink::bind(&l_input_nodes);
 
@@ -472,7 +472,7 @@ void test_dag_logic_join(
     /// TEST THE CACHE FOR JUNCTION
     /////////////////////////////////
 
-    graph l_cache_test_nodes;
+    dag l_cache_test_nodes;
 
     global_node_sink::bind(&l_cache_test_nodes);
 
@@ -549,8 +549,8 @@ void test_dag_logic_invert(
 
 )
 {
-    graph l_input_nodes;
-    graph l_result_nodes;
+    dag l_input_nodes;
+    dag l_result_nodes;
     
     /// Bind to input node sink.
     global_node_sink::bind(&l_input_nodes);
@@ -580,7 +580,7 @@ void test_dag_logic_invert(
     /// TEST THE CACHE FOR INVERSION
     /////////////////////////////////
 
-    graph l_cache_test_nodes;
+    dag l_cache_test_nodes;
 
     global_node_sink::bind(&l_cache_test_nodes);
 
@@ -609,7 +609,7 @@ void test_demorgans(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
 
     global_node_sink::bind(&l_nodes);
 
@@ -632,7 +632,7 @@ void test_composite_function_logic(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
 
     global_node_sink::bind(&l_nodes);
 
@@ -726,7 +726,7 @@ void test_equivalent_functions(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
 
     global_node_sink::bind(&l_nodes);
 
@@ -793,7 +793,7 @@ void test_evaluate(
 
 )
 {
-    graph l_nodes;
+    dag l_nodes;
 
     global_node_sink::bind(&l_nodes);
 
@@ -867,7 +867,7 @@ void test_node_istream_extractor(
     
     /// TEST 0
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]");
@@ -885,7 +885,7 @@ void test_node_istream_extractor(
 
     /// TEST 1
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]'");
@@ -903,7 +903,7 @@ void test_node_istream_extractor(
 
     /// TEST 2
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0][1]");
@@ -921,7 +921,7 @@ void test_node_istream_extractor(
 
     /// TEST 3
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0][1]'");
@@ -939,7 +939,7 @@ void test_node_istream_extractor(
 
     /// TEST 4
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]'[1]");
@@ -957,7 +957,7 @@ void test_node_istream_extractor(
 
     /// TEST 5
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]'[1]'");
@@ -975,7 +975,7 @@ void test_node_istream_extractor(
 
     /// TEST 6
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]'[1][2]'");
@@ -993,7 +993,7 @@ void test_node_istream_extractor(
 
     /// TEST 7
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]+[1]");
@@ -1011,7 +1011,7 @@ void test_node_istream_extractor(
 
     /// TEST 8
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0]+[1]+[2]'");
@@ -1029,7 +1029,7 @@ void test_node_istream_extractor(
 
     /// TEST 9
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0][1]'+([2][3])'");
@@ -1049,7 +1049,7 @@ void test_node_istream_extractor(
 
     /// TEST 10
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0][1]'+([2][3])'+([1][2])");
@@ -1070,7 +1070,7 @@ void test_node_istream_extractor(
 
     /// TEST 11
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0][1]'+(([2][3])'+([1][2]))");
@@ -1092,7 +1092,7 @@ void test_node_istream_extractor(
 
     /// TEST 12
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("[0][1]'+(([2][3])'+([1][2]))'");
@@ -1112,7 +1112,7 @@ void test_node_istream_extractor(
 
     /// TEST 13
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("([0][1]')'+(([2][3])'+([1][2]))'");
@@ -1132,7 +1132,7 @@ void test_node_istream_extractor(
 
     /// TEST 14
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("((([0])))");
@@ -1152,7 +1152,7 @@ void test_node_istream_extractor(
 
     /// TEST 15
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("((([0])))'");
@@ -1172,7 +1172,7 @@ void test_node_istream_extractor(
 
     /// TEST 16 (testing multiplication of multiple sets of parens)
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("([0]'[1])'([2]')");
@@ -1192,7 +1192,7 @@ void test_node_istream_extractor(
 
     /// TEST 17
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("([0]'+[1])'([2]')");
@@ -1212,7 +1212,7 @@ void test_node_istream_extractor(
 
     /// TEST 18
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("([0]+[1]')([2]+[3])");
@@ -1240,7 +1240,7 @@ void test_node_istream_extractor(
 
     /// TEST 19 (Heavy weight test)
     {
-        graph l_nodes;
+        dag l_nodes;
         global_node_sink::bind(&l_nodes);
             
         std::stringstream l_iss("([2]'(([0])[1]))([3]+[4][3]'+[5])'+(([3]+[1]'))'");

@@ -121,6 +121,6 @@ namespace factor
         
     }
 
-    graph* global_node_sink::s_graph(nullptr);
+    dag* global_node_sink::s_graph(nullptr);
 
 }

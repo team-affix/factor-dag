@@ -101,9 +101,9 @@ namespace factor
         const node*& a_node
     );
 
-    struct graph
+    struct dag
     {
-        graph(
+        dag(
             
         )
         {
@@ -113,14 +113,14 @@ namespace factor
         /// We disallow shallow copying the object,
         ///     as this would cause the copied
         ///     graph's pointers to dangle.
-        graph(
-            const graph&
+        dag(
+            const dag&
         ) = delete;
 
         /// For the same reason as above,
         ///     we disallow copy assignment.
-        graph& operator=(
-            const graph&
+        dag& operator=(
+            const dag&
         ) = delete;
 
         size_t size(
@@ -157,17 +157,17 @@ namespace factor
 
     class global_node_sink
     {
-        static graph* s_graph;
+        static dag* s_graph;
 
     public:
         static void bind(
-            graph* a_graph
+            dag* a_graph
         )
         {
             s_graph = a_graph;
         }
 
-        static graph* bound(
+        static dag* bound(
 
         )
         {
